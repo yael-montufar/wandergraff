@@ -117,7 +117,7 @@ export async function updateArtwork(
 }
 
 export async function deleteArtwork(id: string) {
-  const prisma = await prismaClient();
+  return await withPrisma(async (prisma) => {
 
   // Get artwork details before deleting
   const artwork = await prisma.artwork.findUnique({
@@ -198,8 +198,9 @@ export async function deleteArtwork(id: string) {
   }
 
   // Finally delete the artwork itself
-  return prisma.artwork.delete({
+  return await prisma.artwork.delete({
     where: { id },
+  });
   });
 }
 

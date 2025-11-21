@@ -1,4 +1,4 @@
-import { prismaClient } from "./db.server";
+import { withPrisma } from "./db.server";
 import { extractCountryFromCoordinates } from "./geocoding.server";
 
 /**
@@ -19,18 +19,19 @@ export async function ensureCountryExists(
     }
 
     // Create or get the country
-    const db = await prismaClient();
-    const country = await db.country.upsert({
-      where: { name: countryName },
-      update: {
-        artworkCount: {
-          increment: 1,
+    const country = await withPrisma(async (db) => {
+      return await db.country.upsert({
+        where: { name: countryName },
+        update: {
+          artworkCount: {
+            increment: 1,
+          },
         },
-      },
-      create: {
-        name: countryName,
-        artworkCount: 1,
-      },
+        create: {
+          name: countryName,
+          artworkCount: 1,
+        },
+      });
     });
 
     return country.id;
@@ -53,18 +54,19 @@ export async function ensureArtistExists(artistName: string): Promise<string | n
     const normalizedName = artistName.trim();
 
     // Create or get the artist
-    const db = await prismaClient();
-    const artist = await db.artist.upsert({
-      where: { name: normalizedName },
-      update: {
-        artworkCount: {
-          increment: 1,
+    const artist = await withPrisma(async (db) => {
+      return await db.artist.upsert({
+        where: { name: normalizedName },
+        update: {
+          artworkCount: {
+            increment: 1,
+          },
         },
-      },
-      create: {
-        name: normalizedName,
-        artworkCount: 1,
-      },
+        create: {
+          name: normalizedName,
+          artworkCount: 1,
+        },
+      });
     });
 
     return artist.id;
@@ -85,18 +87,19 @@ export async function ensureYearExists(year: number): Promise<string | null> {
 
   try {
     // Create or get the year
-    const db = await prismaClient();
-    const artworkYear = await db.artworkYear.upsert({
-      where: { year },
-      update: {
-        artworkCount: {
-          increment: 1,
+    const artworkYear = await withPrisma(async (db) => {
+      return await db.artworkYear.upsert({
+        where: { year },
+        update: {
+          artworkCount: {
+            increment: 1,
+          },
         },
-      },
-      create: {
-        year,
-        artworkCount: 1,
-      },
+        create: {
+          year,
+          artworkCount: 1,
+        },
+      });
     });
 
     return artworkYear.id;
@@ -111,14 +114,15 @@ export async function ensureYearExists(year: number): Promise<string | null> {
  */
 export async function updateCountryCount(countryId: string, increment: number) {
   try {
-    const db = await prismaClient();
-    await db.country.update({
-      where: { id: countryId },
-      data: {
-        artworkCount: {
-          increment,
+    await withPrisma(async (db) => {
+      await db.country.update({
+        where: { id: countryId },
+        data: {
+          artworkCount: {
+            increment,
+          },
         },
-      },
+      });
     });
   } catch (error) {
     console.error("[CURATION] Error updating country count:", error);
@@ -130,14 +134,15 @@ export async function updateCountryCount(countryId: string, increment: number) {
  */
 export async function updateArtistCount(artistId: string, increment: number) {
   try {
-    const db = await prismaClient();
-    await db.artist.update({
-      where: { id: artistId },
-      data: {
-        artworkCount: {
-          increment,
+    await withPrisma(async (db) => {
+      await db.artist.update({
+        where: { id: artistId },
+        data: {
+          artworkCount: {
+            increment,
+          },
         },
-      },
+      });
     });
   } catch (error) {
     console.error("[CURATION] Error updating artist count:", error);
@@ -149,14 +154,15 @@ export async function updateArtistCount(artistId: string, increment: number) {
  */
 export async function updateYearCount(yearId: string, increment: number) {
   try {
-    const db = await prismaClient();
-    await db.artworkYear.update({
-      where: { id: yearId },
-      data: {
-        artworkCount: {
-          increment,
+    await withPrisma(async (db) => {
+      await db.artworkYear.update({
+        where: { id: yearId },
+        data: {
+          artworkCount: {
+            increment,
+          },
         },
-      },
+      });
     });
   } catch (error) {
     console.error("[CURATION] Error updating year count:", error);
