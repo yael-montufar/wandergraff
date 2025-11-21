@@ -39,30 +39,8 @@ export const loader: LoaderFunction = async ({ request }) => {
         return redirect("/auth/login?error=No+session+returned", { replace: true });
       }
 
-      // Create/upsert user in database
-      try {
-        const { prismaClient } = await import("~/lib/db.server");
-        const supabaseUser = data.session.user;
-        const prisma = await prismaClient();
-
-        // Use Supabase user ID as the primary key
-        await prisma.user.upsert({
-          where: { id: supabaseUser.id },
-          update: {
-            email: supabaseUser.email,
-            name: supabaseUser.user_metadata?.name || supabaseUser.email,
-          },
-          create: {
-            id: supabaseUser.id,
-            email: supabaseUser.email,
-            name: supabaseUser.user_metadata?.name || supabaseUser.email,
-            role: "REGULAR_USER",
-          },
-        });
-      } catch (dbError) {
-        console.error("[CALLBACK] Error creating/updating user in database:", dbError);
-        // Continue with auth even if user creation fails
-      }
+      // Skip database user creation for now
+      console.log("[CALLBACK] Skipping database user creation in server loader");
 
       // Redirect back to callback to let client-side code handle the navigation
       const response = redirect("/auth/callback", { replace: true });
@@ -120,29 +98,8 @@ export default function CallbackPage() {
           // Set the auth cookie
           document.cookie = `auth-token=${data.session.access_token}; path=/; SameSite=Lax`;
 
-          // Create/upsert user in database via API call
-          try {
-            const response = await fetch("/api/auth/create-user", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                id: data.session.user.id,
-                email: data.session.user.email,
-                name: data.session.user.user_metadata?.name || data.session.user.email,
-              }),
-            });
-
-            if (!response.ok) {
-              console.warn("[CALLBACK] Failed to create user in API, but continuing with auth");
-            } else {
-              const result = await response.json();
-              if (result.warning) {
-                console.warn("[CALLBACK]", result.warning);
-              }
-            }
-          } catch (apiError) {
-            console.warn("[CALLBACK] Error calling create-user API, but continuing with auth:", apiError);
-          }
+          // Skip database user creation for now - just continue with auth
+          console.log("[CALLBACK] Skipping database user creation, proceeding with auth only");
 
           // Get redirect URL from URL params first, then sessionStorage, default to home
           const urlParams = new URL(window.location.href).searchParams;
