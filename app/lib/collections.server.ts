@@ -1,4 +1,4 @@
-import { prismaClient } from "./db.server";
+import { withPrisma } from "./db.server";
 
 export async function createCollection(
   userId: string,
@@ -8,22 +8,21 @@ export async function createCollection(
     isPublic?: boolean;
   }
 ) {
-  const prisma = await prismaClient();
-
-  return prisma.collection.create({
-    data: {
-      userId,
-      name,
-      description: options?.description,
-      isPublic: options?.isPublic ?? false,
-    },
+  return await withPrisma(async (prisma) => {
+    return await prisma.collection.create({
+      data: {
+        userId,
+        name,
+        description: options?.description,
+        isPublic: options?.isPublic ?? false,
+      },
+    });
   });
 }
 
 export async function getCollection(id: string) {
-  const prisma = await prismaClient();
-
-  return prisma.collection.findUnique({
+  return await withPrisma(async (prisma) => {
+    return await prisma.collection.findUnique({
     where: { id },
     include: {
       user: {
@@ -60,6 +59,7 @@ export async function getCollection(id: string) {
         orderBy: { addedAt: "desc" },
       },
     },
+    });
   });
 }
 
