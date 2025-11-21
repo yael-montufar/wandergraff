@@ -22,44 +22,39 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }): Promise<ActionData | Response> => {
-  try {
-    console.log("[LOGIN] Action started");
-    
-    if (request.method !== "POST") {
-      console.log("[LOGIN] Method not POST:", request.method);
-      return { error: "Method not allowed" };
-    }
+  console.log("[LOGIN] Action started");
+  
+  if (request.method !== "POST") {
+    console.log("[LOGIN] Method not POST:", request.method);
+    return { error: "Method not allowed" };
+  }
 
-    const formData = await request.formData();
-    const provider = formData.get("provider") as string | null;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+  const formData = await request.formData();
+  const provider = formData.get("provider") as string | null;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
 
-    console.log("[LOGIN] Form data:", { provider, hasEmail: !!email, hasPassword: !!password });
+  console.log("[LOGIN] Form data:", { provider, hasEmail: !!email, hasPassword: !!password });
 
-    // Try multiple ways to get environment variables
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+  // Try multiple ways to get environment variables
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
-    console.log("[LOGIN] Raw environment values:", {
-      supabaseUrl: supabaseUrl,
-      supabaseAnonKey: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : null
-    });
+  console.log("[LOGIN] Raw environment values:", {
+    supabaseUrl: supabaseUrl,
+    supabaseAnonKey: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : null
+  });
 
-    console.log("[LOGIN] Environment check:", {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseAnonKey,
-      urlLength: supabaseUrl?.length || 0,
-      keyLength: supabaseAnonKey?.length || 0
-    });
+  console.log("[LOGIN] Environment check:", {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    urlLength: supabaseUrl?.length || 0,
+    keyLength: supabaseAnonKey?.length || 0
+  });
 
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("[LOGIN] Missing Supabase environment variables");
-      return { error: "Server configuration error" };
-    }
-  } catch (error) {
-    console.error("[LOGIN] Unexpected error in action start:", error);
-    return { error: "Server error occurred" };
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("[LOGIN] Missing Supabase environment variables");
+    return { error: "Server configuration error" };
   }
 
   try {

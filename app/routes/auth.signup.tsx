@@ -23,46 +23,42 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }): Promise<ActionData | Response> => {
-  try {
-    console.log("[SIGNUP] Action started");
-    
-    if (request.method !== "POST") {
-      console.log("[SIGNUP] Method not POST:", request.method);
-      return { error: "Method not allowed" };
-    }
-
-    const formData = await request.formData();
-    const provider = formData.get("provider") as string | null;
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
-    const name = formData.get("name") as string;
-
-    console.log("[SIGNUP] Form data:", { provider, hasEmail: !!email, hasPassword: !!password, hasName: !!name });
-
-    // Try multiple ways to get environment variables
-    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
-
-    console.log("[SIGNUP] Environment check:", {
-      hasUrl: !!supabaseUrl,
-      hasKey: !!supabaseAnonKey,
-      urlLength: supabaseUrl?.length || 0,
-      keyLength: supabaseAnonKey?.length || 0
-    });
-
-    if (!supabaseUrl || !supabaseAnonKey) {
-      console.error("[SIGNUP] Missing Supabase environment variables");
-      return { error: "Server configuration error" };
-    }
-  } catch (error) {
-    console.error("[SIGNUP] Unexpected error in action start:", error);
-    return { error: "Server error occurred" };
+  console.log("[SIGNUP] Action started");
+  
+  if (request.method !== "POST") {
+    console.log("[SIGNUP] Method not POST:", request.method);
+    return { error: "Method not allowed" };
   }
 
-  console.log("[SIGNUP] Creating Supabase client");
-  console.log("[SIGNUP] Using URL:", supabaseUrl);
-  console.log("[SIGNUP] Key length:", supabaseAnonKey?.length);
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
+  const formData = await request.formData();
+  const provider = formData.get("provider") as string | null;
+  const email = formData.get("email") as string;
+  const password = formData.get("password") as string;
+  const name = formData.get("name") as string;
+
+  console.log("[SIGNUP] Form data:", { provider, hasEmail: !!email, hasPassword: !!password, hasName: !!name });
+
+  // Try multiple ways to get environment variables
+  const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
+  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
+
+  console.log("[SIGNUP] Environment check:", {
+    hasUrl: !!supabaseUrl,
+    hasKey: !!supabaseAnonKey,
+    urlLength: supabaseUrl?.length || 0,
+    keyLength: supabaseAnonKey?.length || 0
+  });
+
+  if (!supabaseUrl || !supabaseAnonKey) {
+    console.error("[SIGNUP] Missing Supabase environment variables");
+    return { error: "Server configuration error" };
+  }
+
+  try {
+    console.log("[SIGNUP] Creating Supabase client");
+    console.log("[SIGNUP] Using URL:", supabaseUrl);
+    console.log("[SIGNUP] Key length:", supabaseAnonKey?.length);
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   // Handle OAuth
   if (provider === "google") {
