@@ -359,6 +359,7 @@ export async function unclaimArtwork(artworkId: string, artistId: string) {
       artistId: null,
     },
   });
+  });
 }
 
 export async function getPendingClaimsCount(artistId: string) {
@@ -374,29 +375,30 @@ export async function getPendingClaimsCount(artistId: string) {
 
 export async function isArtistInCooldown(artworkId: string, artistId: string) {
   return await withRawPrisma(async (prisma) => {
-  const COOLDOWN_DAYS = 14;
+    const COOLDOWN_DAYS = 14;
 
-  const artwork = await prisma.artwork.findUnique({
-    where: { id: artworkId },
-    select: { rejectedAt: true, artistId: true },
+    const artwork = await prisma.artwork.findUnique({
+      where: { id: artworkId },
+      select: { rejectedAt: true, artistId: true },
+    });
+
+    if (!artwork || artwork.rejectedAt === null) {
+      return false;
+    }
+
+    // Check if the artwork was previously claimed/rejected by this artist
+    if (artwork.artistId !== artistId) {
+      return false;
+    }
+
+    const now = new Date();
+    const rejectedDate = new Date(artwork.rejectedAt);
+    const daysSinceRejection = Math.floor(
+      (now.getTime() - rejectedDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return daysSinceRejection < COOLDOWN_DAYS;
   });
-
-  if (!artwork || artwork.rejectedAt === null) {
-    return false;
-  }
-
-  // Check if the artwork was previously claimed/rejected by this artist
-  if (artwork.artistId !== artistId) {
-    return false;
-  }
-
-  const now = new Date();
-  const rejectedDate = new Date(artwork.rejectedAt);
-  const daysSinceRejection = Math.floor(
-    (now.getTime() - rejectedDate.getTime()) / (1000 * 60 * 60 * 24)
-  );
-
-  return daysSinceRejection < COOLDOWN_DAYS;
 }
 
 export async function findNearbyArtworks(
@@ -417,6 +419,7 @@ export async function findNearbyArtworks(
     calculateDistance(latitude, longitude, artwork.latitude, artwork.longitude) <=
     radiusMeters
   );
+  });
 }
 
 export async function findDuplicateArtworkNearby(
@@ -502,19 +505,19 @@ export async function getArtworksByArtist(artistId: string) {
 
 export async function getArtworksByYear(year: number) {
   return await withRawPrisma(async (prisma) => {
-
-  return prisma.artwork.findMany({
-    where: {
-      yearCreated: year,
-      claimStatus: "CLAIMED",
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
-    include: {
-      createdBy: true,
-      artist: true,
-    },
+    return prisma.artwork.findMany({
+      where: {
+        yearCreated: year,
+        claimStatus: "CLAIMED",
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+      include: {
+        createdBy: true,
+        artist: true,
+      },
+    });
   });
 }
 
@@ -538,16 +541,17 @@ export async function getYearsWithArtworks() {
     .sort((a, b) => (b as number) - (a as number));
 
   return years;
+  });
 }
 
 export async function getArtworkCountByYear(year: number) {
   return await withRawPrisma(async (prisma) => {
-
-  return prisma.artwork.count({
-    where: {
-      yearCreated: year,
-      claimStatus: "CLAIMED",
-    },
+    return prisma.artwork.count({
+      where: {
+        yearCreated: year,
+        claimStatus: "CLAIMED",
+      },
+    });
   });
 }
 
@@ -575,6 +579,7 @@ export async function listArtists(limit = 100) {
     ...artist,
     artworkCount: artist.claimedArtworks.length,
   }));
+  });
 }
 
 export async function getRecentArtworks(limit = 20) {
