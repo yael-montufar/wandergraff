@@ -156,9 +156,10 @@ export async function getRootUserProfile(userId: string) {
   });
 }
 
-// Helper for recent artworks using raw SQL
+// Helper for recent artworks using raw SQL with photos
 export async function getRecentArtworksRaw(limit: number = 20) {
   return await withRawQuery(async (prisma) => {
+    // Get artworks with their first photo
     const artworks = await prisma.$queryRaw`
       SELECT 
         a."id",
@@ -170,16 +171,35 @@ export async function getRecentArtworksRaw(limit: number = 20) {
         a."yearCreated",
         a."claimStatus",
         a."createdAt",
+        a."artistId",
         u."name" as "createdByName",
         artist."name" as "artistName",
-        artist."artistName" as "artistDisplayName"
+        artist."artistName" as "artistDisplayName",
+        p."photoUrl" as "firstPhotoUrl",
+        (SELECT COUNT(*) FROM "Photo" WHERE "artworkId" = a."id") as "photoCount"
       FROM "Artwork" a
       LEFT JOIN "User" u ON a."createdById" = u."id"
       LEFT JOIN "User" artist ON a."artistId" = artist."id"
+      LEFT JOIN LATERAL (
+        SELECT "photoUrl" 
+        FROM "Photo" 
+        WHERE "artworkId" = a."id" 
+        ORDER BY "uploadedAt" DESC 
+        LIMIT 1
+      ) p ON true
       ORDER BY a."createdAt" DESC
       LIMIT ${limit}
     `;
     
-    return Array.isArray(artworks) ? artworks : [];
+    // Transform the results to match the expected structure
+    const transformedArtworks = Array.isArray(artworks) ? artworks.map((artwork: any) => ({
+      ...artwork,
+      artist: artwork.artistName ? { 
+        name: artwork.artistDisplayName || artwork.artistName 
+      } : null,
+      photos: artwork.firstPhotoUrl ? [{ photoUrl: artwork.firstPhotoUrl }] : []
+    })) : [];
+    
+    return transformedArtworks;
   });
 }

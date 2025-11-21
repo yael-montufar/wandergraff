@@ -52,8 +52,8 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   // Fetch user from database to get current role
-  const { withPrisma } = await import("~/lib/db.server");
-  const dbUser = await withPrisma(async (prisma) => {
+  const { withRawPrisma } = await import("~/lib/db.server");
+  const dbUser = await withRawPrisma(async (prisma) => {
     return await prisma.user.findUnique({
       where: { id: user.id },
       select: { role: true },
@@ -81,7 +81,7 @@ export const loader: LoaderFunction = async ({ request }) => {
   });
 
   // Fetch all artists with their contact info
-  const artists = await withPrisma(async (prisma) => {
+  const artists = await withRawPrisma(async (prisma) => {
     return await prisma.user.findMany({
       where: { role: "ARTIST" },
       select: {

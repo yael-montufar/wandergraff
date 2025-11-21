@@ -18,7 +18,7 @@ type LoaderData = {
 };
 
 export const loader: Route.LoaderFunction = async ({ params, request }) => {
-  const { withPrisma } = await import("~/lib/db.server");
+  const { withRawPrisma } = await import("~/lib/db.server");
   const { getUserCollections } = await import("~/lib/collections.server");
 
   const { id } = params;
@@ -28,7 +28,7 @@ export const loader: Route.LoaderFunction = async ({ params, request }) => {
   }
 
   try {
-    const { user, collections, publicPhotos, claimedArtworks } = await withPrisma(async (prisma) => {
+    const { user, collections, publicPhotos, claimedArtworks } = await withRawPrisma(async (prisma) => {
       const user = await prisma.user.findUnique({
         where: { id },
         select: {

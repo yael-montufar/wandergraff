@@ -33,10 +33,10 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     try {
-      const { withPrisma } = await import("~/lib/db.server");
+      const { withRawPrisma } = await import("~/lib/db.server");
 
       // Use Supabase user ID as the primary key
-      const dbUser = await withPrisma(async (prisma) => {
+      const dbUser = await withRawPrisma(async (prisma) => {
         return await prisma.user.upsert({
           where: { id },
           update: {
