@@ -2,14 +2,15 @@ import { type LoaderFunction } from "react-router";
 
 export const loader: LoaderFunction = async () => {
   try {
-    const { withPrisma } = await import("~/lib/db.server");
-    const years = await withPrisma(async (db) => {
-      return await db.artworkYear.findMany({
-        orderBy: [
-          { artworkCount: "desc" },
-          { year: "desc" },
-        ],
-      });
+    const { withDirectPG } = await import("~/lib/db.server");
+    const years = await withDirectPG(async (client) => {
+      const query = `
+        SELECT "id", "year", "artworkCount", "createdAt", "updatedAt"
+        FROM "ArtworkYear"
+        ORDER BY "artworkCount" DESC, "year" DESC
+      `;
+      const result = await client.query(query);
+      return result.rows;
     });
 
     return new Response(JSON.stringify(years), {
