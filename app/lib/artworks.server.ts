@@ -458,42 +458,42 @@ export async function getArtworksInBounds(
   maxLon: number,
   limit = 100
 ) {
-  const prisma = await prismaClient();
-
-  return prisma.artwork.findMany({
-    where: {
-      latitude: {
-        gte: minLat,
-        lte: maxLat,
+  return await withPrisma(async (prisma) => {
+    return await prisma.artwork.findMany({
+      where: {
+        latitude: {
+          gte: minLat,
+          lte: maxLat,
+        },
+        longitude: {
+          gte: minLon,
+          lte: maxLon,
+        },
       },
-      longitude: {
-        gte: minLon,
-        lte: maxLon,
+      take: limit,
+      include: {
+        createdBy: true,
+        artist: true,
       },
-    },
-    take: limit,
-    include: {
-      createdBy: true,
-      artist: true,
-    },
+    });
   });
 }
 
 export async function getArtworksByArtist(artistId: string) {
-  const prisma = await prismaClient();
-
-  return prisma.artwork.findMany({
-    where: {
-      artistId,
-      claimStatus: "CLAIMED",
-    },
-    orderBy: {
-      yearCreated: "desc",
-    },
-    include: {
-      createdBy: true,
-      artist: true,
-    },
+  return await withPrisma(async (prisma) => {
+    return await prisma.artwork.findMany({
+      where: {
+        artistId,
+        claimStatus: "CLAIMED",
+      },
+      orderBy: {
+        yearCreated: "desc",
+      },
+      include: {
+        createdBy: true,
+        artist: true,
+      },
+    });
   });
 }
 
@@ -601,53 +601,53 @@ export async function getAllArtworks(options?: {
   limit?: number;
   offset?: number;
 }) {
-  const prisma = await prismaClient();
+  return await withPrisma(async (prisma) => {
+    const where: any = {};
 
-  const where: any = {};
+    // Search by title or address
+    if (options?.search) {
+      where.OR = [
+        { title: { contains: options.search, mode: "insensitive" } },
+        { address: { contains: options.search, mode: "insensitive" } },
+      ];
+    }
 
-  // Search by title or address
-  if (options?.search) {
-    where.OR = [
-      { title: { contains: options.search, mode: "insensitive" } },
-      { address: { contains: options.search, mode: "insensitive" } },
-    ];
-  }
+    // Filter by claim status
+    if (options?.claimStatus && options.claimStatus !== "ALL") {
+      where.claimStatus = options.claimStatus;
+    }
 
-  // Filter by claim status
-  if (options?.claimStatus && options.claimStatus !== "ALL") {
-    where.claimStatus = options.claimStatus;
-  }
+    const offset = options?.offset || 0;
+    const limit = options?.limit || 50;
 
-  const offset = options?.offset || 0;
-  const limit = options?.limit || 50;
-
-  const [artworks, total] = await Promise.all([
-    prisma.artwork.findMany({
-      where,
-      include: {
-        createdBy: true,
-        artist: true,
-        photos: {
-          take: 1,
-          orderBy: {
-            uploadedAt: "desc",
+    const [artworks, total] = await Promise.all([
+      prisma.artwork.findMany({
+        where,
+        include: {
+          createdBy: true,
+          artist: true,
+          photos: {
+            take: 1,
+            orderBy: {
+              uploadedAt: "desc",
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-      skip: offset,
-      take: limit,
-    }),
-    prisma.artwork.count({ where }),
-  ]);
+        orderBy: {
+          createdAt: "desc",
+        },
+        skip: offset,
+        take: limit,
+      }),
+      prisma.artwork.count({ where }),
+    ]);
 
-  return {
-    artworks,
-    total,
-    limit,
-    offset,
-    hasMore: offset + limit < total,
-  };
+    return {
+      artworks,
+      total,
+      limit,
+      offset,
+      hasMore: offset + limit < total,
+    };
+  });
 }
