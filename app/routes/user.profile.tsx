@@ -32,7 +32,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const { getPhotosByUser } = await import("~/lib/photos.server");
   const { getUserCollections } = await import("~/lib/collections.server");
-  const { withPrisma } = await import("~/lib/db.server");
+  const { getUserProfileData } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
@@ -43,24 +43,8 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   }
 
   try {
-    const userDetails = await withPrisma(async (prisma) => {
-      return await prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          avatarUrl: true,
-          bio: true,
-          role: true,
-          artistName: true,
-          artistWebsite: true,
-          artistEmail: true,
-          artistInstagram: true,
-          artistTwitter: true,
-          artistBio: true,
-        },
-      });
-    });
-
-    const [allPhotos, collections] = await Promise.all([
+    const [userDetails, allPhotos, collections] = await Promise.all([
+      getUserProfileData(user.id),
       getPhotosByUser(user.id),
       getUserCollections(user.id),
     ]);

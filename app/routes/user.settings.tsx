@@ -21,7 +21,7 @@ type ActionData = {
 
 export const loader: Route.LoaderFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
-  const { withPrisma } = await import("~/lib/db.server");
+  const { getUserSettingsData } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
@@ -32,18 +32,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   }
 
   try {
-    const userDetails = await withPrisma(async (prisma) => {
-      return await prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        bio: true,
-        avatarUrl: true,
-      },
-      });
-    });
+    const userDetails = await getUserSettingsData(user.id);
 
     if (!userDetails) {
       throw new Error("User not found");
