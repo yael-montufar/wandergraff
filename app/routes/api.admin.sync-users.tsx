@@ -92,7 +92,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       // SYNC USERS
       const dbUsers = await withPrisma(async (prisma) => {
         return await prisma.user.findMany({
-          select: { id: true, email: true },
+        select: { id: true, email: true },
         });
       });
 
@@ -121,12 +121,12 @@ export const loader: LoaderFunction = async ({ request }) => {
         try {
           await withPrisma(async (prisma) => {
             return await prisma.user.create({
-              data: {
-                id: authUser.id,
-                email: authUser.email!,
-                name: name,
-                role: "REGULAR_USER",
-              },
+            data: {
+              id: authUser.id,
+              email: authUser.email!,
+              name: name,
+              role: "REGULAR_USER",
+            },
             });
           });
           created.push(authUser.email);

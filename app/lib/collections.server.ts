@@ -10,12 +10,12 @@ export async function createCollection(
 ) {
   return await withPrisma(async (prisma) => {
     return await prisma.collection.create({
-      data: {
-        userId,
-        name,
-        description: options?.description,
-        isPublic: options?.isPublic ?? false,
-      },
+    data: {
+      userId,
+      name,
+      description: options?.description,
+      isPublic: options?.isPublic ?? false,
+    },
     });
   });
 }
@@ -73,8 +73,8 @@ export async function updateCollection(
 ) {
   return await withPrisma(async (prisma) => {
     return await prisma.collection.update({
-      where: { id },
-      data,
+    where: { id },
+    data,
     });
   });
 }
@@ -82,7 +82,7 @@ export async function updateCollection(
 export async function deleteCollection(id: string) {
   return await withPrisma(async (prisma) => {
     return await prisma.collection.delete({
-      where: { id },
+    where: { id },
     });
   });
 }
@@ -92,19 +92,19 @@ export async function addArtworkToCollection(
   artworkId: string
 ) {
   return await withPrisma(async (prisma) => {
-    // Use upsert to make it idempotent - if already exists, just return it
+  // Use upsert to make it idempotent - if already exists, just return it
     return await prisma.collectionItem.upsert({
-      where: {
-        collectionId_artworkId: {
-          collectionId,
-          artworkId,
-        },
-      },
-      update: {},
-      create: {
+    where: {
+      collectionId_artworkId: {
         collectionId,
         artworkId,
       },
+    },
+    update: {},
+    create: {
+      collectionId,
+      artworkId,
+    },
     });
   });
 }
@@ -115,10 +115,10 @@ export async function removeArtworkFromCollection(
 ) {
   return await withPrisma(async (prisma) => {
     return await prisma.collectionItem.deleteMany({
-      where: {
-        collectionId,
-        artworkId,
-      },
+    where: {
+      collectionId,
+      artworkId,
+    },
     });
   });
 }
@@ -128,27 +128,27 @@ export async function isArtworkInCollection(
   artworkId: string
 ) {
   return await withPrisma(async (prisma) => {
-    const item = await prisma.collectionItem.findUnique({
-      where: {
-        collectionId_artworkId: {
-          collectionId,
-          artworkId,
-        },
+  const item = await prisma.collectionItem.findUnique({
+    where: {
+      collectionId_artworkId: {
+        collectionId,
+        artworkId,
       },
-    });
+    },
+  });
 
-    return !!item;
+  return !!item;
   });
 }
 
 export async function getUserCollections(userId: string) {
   return await withPrisma(async (prisma) => {
     return await prisma.collection.findMany({
-      where: { userId },
-      include: {
-        items: true,
-      },
-      orderBy: { createdAt: "desc" },
+    where: { userId },
+    include: {
+      items: true,
+    },
+    orderBy: { createdAt: "desc" },
     });
   });
 }
@@ -156,21 +156,21 @@ export async function getUserCollections(userId: string) {
 export async function getPublicCollections(limit = 50) {
   return await withPrisma(async (prisma) => {
     return await prisma.collection.findMany({
-      where: { isPublic: true },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
-          },
-        },
-        items: {
-          take: 3,
+    where: { isPublic: true },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
         },
       },
-      orderBy: { createdAt: "desc" },
-      take: limit,
+      items: {
+        take: 3,
+      },
+    },
+    orderBy: { createdAt: "desc" },
+    take: limit,
     });
   });
 }
@@ -178,36 +178,36 @@ export async function getPublicCollections(limit = 50) {
 export async function searchCollections(query: string, limit = 20) {
   return await withPrisma(async (prisma) => {
     return await prisma.collection.findMany({
-      where: {
-        isPublic: true,
-        OR: [
-          {
-            name: {
-              contains: query,
-              mode: "insensitive",
-            },
-          },
-          {
-            description: {
-              contains: query,
-              mode: "insensitive",
-            },
-          },
-        ],
-      },
-      include: {
-        user: {
-          select: {
-            id: true,
-            name: true,
-            avatarUrl: true,
+    where: {
+      isPublic: true,
+      OR: [
+        {
+          name: {
+            contains: query,
+            mode: "insensitive",
           },
         },
-        items: {
-          take: 3,
+        {
+          description: {
+            contains: query,
+            mode: "insensitive",
+          },
+        },
+      ],
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          name: true,
+          avatarUrl: true,
         },
       },
-      take: limit,
+      items: {
+        take: 3,
+      },
+    },
+    take: limit,
     });
   });
 }
@@ -215,7 +215,7 @@ export async function searchCollections(query: string, limit = 20) {
 export async function getCollectionArtworkCount(collectionId: string) {
   return await withPrisma(async (prisma) => {
     return await prisma.collectionItem.count({
-      where: { collectionId },
+    where: { collectionId },
     });
   });
 }

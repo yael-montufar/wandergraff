@@ -75,8 +75,8 @@ export const action: Route.ActionFunction = async ({ request, params }) => {
       // Verify user has ARTIST role
       const userProfile = await withPrisma(async (prisma) => {
         return await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { role: true },
+        where: { id: user.id },
+        select: { role: true },
         });
       });
 

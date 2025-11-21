@@ -34,14 +34,14 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   try {
     const userDetails = await withPrisma(async (prisma) => {
       return await prisma.user.findUnique({
-        where: { id: user.id },
-        select: {
-          id: true,
-          name: true,
-          email: true,
-          bio: true,
-          avatarUrl: true,
-        },
+      where: { id: user.id },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        bio: true,
+        avatarUrl: true,
+      },
       });
     });
 
@@ -80,11 +80,11 @@ export const action: Route.ActionFunction = async ({ request }) => {
     try {
       await withPrisma(async (prisma) => {
         return await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            name: name.trim(),
-            bio: bio ? bio.trim() : null,
-          },
+        where: { id: user.id },
+        data: {
+          name: name.trim(),
+          bio: bio ? bio.trim() : null,
+        },
         });
       });
 

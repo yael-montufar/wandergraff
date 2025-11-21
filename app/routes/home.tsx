@@ -38,8 +38,8 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   if (user) {
     const dbUser = await withPrisma(async (prisma) => {
       return await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { role: true },
+      where: { id: user.id },
+      select: { role: true },
       });
     });
 

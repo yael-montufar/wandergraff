@@ -5,10 +5,10 @@ export const loader: LoaderFunction = async () => {
     const { withPrisma } = await import("~/lib/db.server");
     const countries = await withPrisma(async (db) => {
       return await db.country.findMany({
-        orderBy: [
-          { artworkCount: "desc" },
-          { name: "asc" },
-        ],
+      orderBy: [
+        { artworkCount: "desc" },
+        { name: "asc" },
+      ],
       });
     });
 
