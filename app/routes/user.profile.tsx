@@ -127,7 +127,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
         const artistBio = formData.get("artistBio") as string;
 
         // Get current artist name to check if it changed and update user
-        const currentUser = await withPrisma(async (prisma) => {
+        const currentUser = await withRawPrisma(async (prisma) => {
           const currentUserData = await prisma.user.findUnique({
             where: { id: user.id },
             select: { artistName: true },

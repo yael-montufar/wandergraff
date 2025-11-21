@@ -78,7 +78,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
 
       // Delete from database
-      const deleteResult = await withPrisma(async (prisma) => {
+      const deleteResult = await withRawPrisma(async (prisma) => {
         return await prisma.user.deleteMany({});
       });
       results.dbDeleted = deleteResult.count;
@@ -90,7 +90,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     } else {
       // SYNC USERS
-      const dbUsers = await withPrisma(async (prisma) => {
+      const dbUsers = await withRawPrisma(async (prisma) => {
         return await prisma.user.findMany({
         select: { id: true, email: true },
         });
