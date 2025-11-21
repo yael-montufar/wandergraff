@@ -363,12 +363,12 @@ export async function unclaimArtwork(artworkId: string, artistId: string) {
 
 export async function getPendingClaimsCount(artistId: string) {
   return await withRawPrisma(async (prisma) => {
-
-  return prisma.artwork.count({
-    where: {
-      artistId,
-      claimStatus: "PENDING_APPROVAL",
-    },
+    return prisma.artwork.count({
+      where: {
+        artistId,
+        claimStatus: "PENDING_APPROVAL",
+      },
+    });
   });
 }
 
