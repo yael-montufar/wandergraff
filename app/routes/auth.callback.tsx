@@ -39,8 +39,36 @@ export const loader: LoaderFunction = async ({ request }) => {
         return redirect("/auth/login?error=No+session+returned", { replace: true });
       }
 
-      // Skip database user creation for now
-      console.log("[CALLBACK] Skipping database user creation in server loader");
+      // Create database user record
+      console.log("[CALLBACK] Creating database user record");
+      const user = data.session.user;
+      
+      try {
+        const origin = new URL(request.url).origin;
+        const createUserUrl = new URL("/api/auth/create-user", origin);
+        
+        const createUserResponse = await fetch(createUserUrl.toString(), {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.name || user.email?.split("@")[0] || "User",
+          }),
+        });
+
+        if (!createUserResponse.ok) {
+          console.error("[CALLBACK] Failed to create database user:", await createUserResponse.text());
+          // Continue anyway - user is authenticated in Supabase
+        } else {
+          console.log("[CALLBACK] Database user created successfully");
+        }
+      } catch (createUserError) {
+        console.error("[CALLBACK] Error creating database user:", createUserError);
+        // Continue anyway - user is authenticated in Supabase
+      }
 
       // Redirect back to callback to let client-side code handle the navigation
       const response = redirect("/auth/callback", { replace: true });
@@ -98,8 +126,33 @@ export default function CallbackPage() {
           // Set the auth cookie
           document.cookie = `auth-token=${data.session.access_token}; path=/; SameSite=Lax`;
 
-          // Skip database user creation for now - just continue with auth
-          console.log("[CALLBACK] Skipping database user creation, proceeding with auth only");
+          // Create database user record if needed
+          console.log("[CALLBACK] Ensuring database user record exists");
+          const user = data.session.user;
+          
+          try {
+            const createUserResponse = await fetch("/api/auth/create-user", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                id: user.id,
+                email: user.email,
+                name: user.user_metadata?.name || user.email?.split("@")[0] || "User",
+              }),
+            });
+
+            if (!createUserResponse.ok) {
+              console.error("[CALLBACK] Failed to create database user:", await createUserResponse.text());
+              // Continue anyway - user is authenticated in Supabase
+            } else {
+              console.log("[CALLBACK] Database user created/updated successfully");
+            }
+          } catch (createUserError) {
+            console.error("[CALLBACK] Error creating database user:", createUserError);
+            // Continue anyway - user is authenticated in Supabase
+          }
 
           // Get redirect URL from URL params first, then sessionStorage, default to home
           const urlParams = new URL(window.location.href).searchParams;

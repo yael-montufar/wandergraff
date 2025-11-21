@@ -144,6 +144,33 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
 
     console.log("[LOGIN] User signed in successfully");
 
+    // Ensure database user record exists
+    try {
+      const origin = new URL(request.url).origin;
+      const createUserUrl = new URL("/api/auth/create-user", origin);
+      const user = data.session.user;
+      
+      const createUserResponse = await fetch(createUserUrl.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: user.id,
+          email: user.email,
+          name: user.user_metadata?.name || user.email?.split("@")[0] || "User",
+        }),
+      });
+
+      if (!createUserResponse.ok) {
+        console.error("[LOGIN] Failed to create/update database user:", await createUserResponse.text());
+      } else {
+        console.log("[LOGIN] Database user created/updated successfully");
+      }
+    } catch (createUserError) {
+      console.error("[LOGIN] Error creating database user:", createUserError);
+    }
+
     // Set auth cookie and redirect
     const response = redirect("/");
     response.headers.set(

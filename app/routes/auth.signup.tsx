@@ -115,6 +115,33 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
     }
 
     console.log("[SIGNUP] User created successfully:", data.user.id);
+    
+    // Create database user record
+    try {
+      const origin = new URL(request.url).origin;
+      const createUserUrl = new URL("/api/auth/create-user", origin);
+      
+      const createUserResponse = await fetch(createUserUrl.toString(), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          id: data.user.id,
+          email: data.user.email,
+          name: name,
+        }),
+      });
+
+      if (!createUserResponse.ok) {
+        console.error("[SIGNUP] Failed to create database user:", await createUserResponse.text());
+      } else {
+        console.log("[SIGNUP] Database user created successfully");
+      }
+    } catch (createUserError) {
+      console.error("[SIGNUP] Error creating database user:", createUserError);
+    }
+    
     // Redirect to login
     return redirect("/auth/login");
   } catch (error) {
