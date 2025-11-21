@@ -47,7 +47,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
 
 export const action: Route.ActionFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
-  const { withPrisma } = await import("~/lib/db.server");
+  const { withRawPrisma } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
@@ -67,7 +67,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
     }
 
     try {
-      await withPrisma(async (prisma) => {
+      await withRawPrisma(async (prisma) => {
         return await prisma.user.update({
         where: { id: user.id },
         data: {

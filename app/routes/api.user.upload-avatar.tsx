@@ -11,7 +11,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
   try {
     const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
     const { uploadToSupabaseStorage } = await import("~/lib/supabase-storage.server");
-    const { withPrisma } = await import("~/lib/db.server");
+    const { withRawPrisma } = await import("~/lib/db.server");
 
     const cookieHeader = request.headers.get("cookie");
     const token = getAuthTokenFromCookie(cookieHeader);
@@ -58,7 +58,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
     const avatarUrl = await uploadToSupabaseStorage(buffer, "avatar", avatarFile.type);
 
     // Update user avatar in database
-    await withPrisma(async (prisma) => {
+      await withRawPrisma(async (prisma) => {
       await prisma.user.update({
         where: { id: user.id },
         data: { avatarUrl },

@@ -44,7 +44,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       },
     });
 
-    const { withPrisma } = await import("~/lib/db.server");
+    const { withRawPrisma } = await import("~/lib/db.server");
 
     // Get all users from Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
@@ -119,7 +119,7 @@ export const loader: LoaderFunction = async ({ request }) => {
         const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User";
 
         try {
-          await withPrisma(async (prisma) => {
+          await withRawPrisma(async (prisma) => {
             return await prisma.user.create({
             data: {
               id: authUser.id,
