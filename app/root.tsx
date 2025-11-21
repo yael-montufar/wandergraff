@@ -14,7 +14,7 @@ import { useAuthStateValidation } from "./lib/useAuthStateValidation";
 
 export const loader: Route.LoaderFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("./lib/auth.server");
-  const { withPrisma } = await import("./lib/db.server");
+  const { getRootUserProfile } = await import("./lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
@@ -27,16 +27,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
     try {
       console.log("[ROOT] Attempting to fetch user profile for:", user.id);
       
-      const profile = await withPrisma(async (prisma) => {
-        console.log("[ROOT] Database connection established");
-        return await prisma.user.findUnique({
-          where: { id: user.id },
-          select: {
-            avatarUrl: true,
-            role: true,
-          },
-        });
-      });
+      const profile = await getRootUserProfile(user.id);
 
       if (profile) {
         console.log("[ROOT] User profile found in database");

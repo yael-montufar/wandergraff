@@ -38,78 +38,50 @@ export async function withRawQuery<T>(callback: (prisma: PrismaClient) => Promis
   }
 }
 
-// For serverless environments, we need to ensure each operation gets a fresh client
-// to avoid prepared statement conflicts and connection pooling issues
-export async function withPrisma<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
-  // Always create a fresh PrismaClient instance to avoid prepared statement conflicts
+// CRITICAL: Use raw queries only to completely bypass prepared statements
+export async function withRawPrisma<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
   const connectionString = process.env.DATABASE_URL;
   if (!connectionString) {
     throw new Error("DATABASE_URL environment variable is not set");
   }
 
-  // Create multiple layers of uniqueness to prevent prepared statement conflicts
+  // Force a completely unique connection that bypasses all Prisma caching
   const timestamp = Date.now();
   const randomId = Math.random().toString(36).substring(2, 15);
   const processId = process.pid || Math.floor(Math.random() * 10000);
   const uniqueId = `${timestamp}_${randomId}_${processId}`;
   
-  // Add unique parameters to force completely separate connections
+  // Use direct connection with no prepared statement support
   const separator = connectionString.includes('?') ? '&' : '?';
-  const uniqueConnectionString = `${connectionString}${separator}application_name=wandergraff_${uniqueId}&connect_timeout=10&pool_timeout=10`;
+  const rawConnectionString = `${connectionString}${separator}application_name=wandergraff_raw_${uniqueId}&statement_timeout=30000&lock_timeout=30000`;
 
   const prisma = new PrismaClient({
     datasources: {
       db: {
-        url: uniqueConnectionString,
+        url: rawConnectionString,
       },
     },
-    // Force Prisma to not cache prepared statements
-    log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
+    log: ['error'],
   });
 
   try {
-    // Ensure the client is connected with a timeout
-    const connectPromise = prisma.$connect();
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Database connection timeout')), 10000)
-    );
-    
-    await Promise.race([connectPromise, timeoutPromise]);
-    
-    // Add a small random delay to prevent concurrent prepared statement conflicts
-    const delay = Math.floor(Math.random() * 50) + 10; // 10-60ms random delay
-    await new Promise(resolve => setTimeout(resolve, delay));
-    
-    // Execute the callback
-    const result = await callback(prisma);
-    
-    return result;
+    await prisma.$connect();
+    return await callback(prisma);
   } catch (error) {
-    console.error("Database operation failed:", error);
-    
-    // If it's a prepared statement error, retry once with a longer delay
-    if (error instanceof Error && error.message.includes('prepared statement')) {
-      console.log("Retrying database operation due to prepared statement conflict...");
-      try {
-        await new Promise(resolve => setTimeout(resolve, 100 + Math.random() * 200)); // 100-300ms delay
-        const retryResult = await callback(prisma);
-        return retryResult;
-      } catch (retryError) {
-        console.error("Retry also failed:", retryError);
-        throw retryError;
-      }
-    }
-    
+    console.error("Raw database operation failed:", error);
     throw error;
   } finally {
-    // Always disconnect to prevent connection leaks
     try {
       await prisma.$disconnect();
     } catch (disconnectError) {
-      console.error("Failed to disconnect Prisma client:", disconnectError);
-      // Don't throw here as it might mask the original error
+      console.error("Failed to disconnect raw Prisma client:", disconnectError);
     }
   }
+}
+
+// Legacy withPrisma - now just calls withRawPrisma
+export async function withPrisma<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
+  return withRawPrisma(callback);
 }
 
 // Export prismaClient for direct use where withPrisma is not suitable (e.g., migrations)
@@ -166,5 +138,48 @@ export async function getUserSettingsData(userId: string) {
     `;
     
     return Array.isArray(userDetails) ? userDetails[0] : null;
+  });
+}
+
+// Helper for root loader user profile using raw SQL
+export async function getRootUserProfile(userId: string) {
+  return await withRawQuery(async (prisma) => {
+    const userProfile = await prisma.$queryRaw`
+      SELECT 
+        "avatarUrl", 
+        "role"
+      FROM "User" 
+      WHERE "id" = ${userId}
+    `;
+    
+    return Array.isArray(userProfile) ? userProfile[0] : null;
+  });
+}
+
+// Helper for recent artworks using raw SQL
+export async function getRecentArtworksRaw(limit: number = 20) {
+  return await withRawQuery(async (prisma) => {
+    const artworks = await prisma.$queryRaw`
+      SELECT 
+        a."id",
+        a."title",
+        a."description",
+        a."latitude",
+        a."longitude",
+        a."address",
+        a."yearCreated",
+        a."claimStatus",
+        a."createdAt",
+        u."name" as "createdByName",
+        artist."name" as "artistName",
+        artist."artistName" as "artistDisplayName"
+      FROM "Artwork" a
+      LEFT JOIN "User" u ON a."createdById" = u."id"
+      LEFT JOIN "User" artist ON a."artistId" = artist."id"
+      ORDER BY a."createdAt" DESC
+      LIMIT ${limit}
+    `;
+    
+    return Array.isArray(artworks) ? artworks : [];
   });
 }

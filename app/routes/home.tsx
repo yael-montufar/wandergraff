@@ -29,28 +29,26 @@ const colorSchemes = {
 export const loader: Route.LoaderFunction = async ({ request }) => {
   // Check if user is admin and redirect to dashboard
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
-  const { withPrisma } = await import("~/lib/db.server");
+  const { getRootUserProfile, getRecentArtworksRaw } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
   const user = getUserFromToken(token);
 
   if (user) {
-    const dbUser = await withPrisma(async (prisma) => {
-      return await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { role: true },
-      });
-    });
-
-    if (dbUser?.role === "ADMIN") {
-      return redirect("/admin/dashboard");
+    try {
+      const dbUser = await getRootUserProfile(user.id);
+      if (dbUser?.role === "ADMIN") {
+        return redirect("/admin/dashboard");
+      }
+    } catch (error) {
+      console.error("[HOME] Error checking user role:", error);
+      // Continue with normal flow if role check fails
     }
   }
 
   try {
-    const { getRecentArtworks } = await import("../lib/artworks.server");
-    const artworks = await getRecentArtworks(20);
+    const artworks = await getRecentArtworksRaw(20);
     return { artworks, currentUserId: user?.id };
   } catch (error) {
     console.error("[HOME] Error loading artworks:", error);
