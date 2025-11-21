@@ -1,4 +1,5 @@
 import { type ActionFunction, type LoaderFunction, redirect, useActionData, Form } from "react-router";
+import { createClient } from "@supabase/supabase-js";
 import { useTheme } from "~/lib/useTheme";
 
 type ActionData = {
@@ -57,7 +58,9 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
     return { error: "Server error occurred" };
   }
 
-  const { createClient } = await import("@supabase/supabase-js");
+  console.log("[SIGNUP] Creating Supabase client");
+  console.log("[SIGNUP] Using URL:", supabaseUrl);
+  console.log("[SIGNUP] Key length:", supabaseAnonKey?.length);
   const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
   // Handle OAuth
