@@ -25,7 +25,10 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   // If user is authenticated, fetch their profile including avatar and role
   if (user) {
     try {
+      console.log("[ROOT] Attempting to fetch user profile for:", user.id);
       const prisma = await prismaClient();
+      console.log("[ROOT] Database connection established");
+      
       const profile = await prisma.user.findUnique({
         where: { id: user.id },
         select: {
@@ -35,6 +38,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
       });
 
       if (profile) {
+        console.log("[ROOT] User profile found in database");
         userWithProfile = {
           ...user,
           avatarUrl: profile.avatarUrl,
@@ -52,6 +56,10 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
       }
     } catch (error) {
       console.error("[ROOT] Error fetching user profile:", error);
+      console.error("[ROOT] Error details:", {
+        message: error instanceof Error ? error.message : String(error),
+        name: error instanceof Error ? error.name : undefined
+      });
       // Continue with basic user info if profile fetch fails
       userWithProfile = {
         ...user,
