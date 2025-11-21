@@ -12,8 +12,8 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const { withPrisma } = await import("~/lib/db.server");
-    const artworks = await withPrisma(async (db) => {
+    const { withRawPrisma } = await import("~/lib/db.server");
+    const artworks = await withRawPrisma(async (db) => {
       return await db.artwork.findMany({
         where: {
           yearCreated: Number(year),

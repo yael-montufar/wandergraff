@@ -31,7 +31,7 @@ function fuzzyMatch(query: string, text: string): number {
 
 export const loader: Route.LoaderFunction = async ({ request }) => {
   try {
-    const { withPrisma } = await import("~/lib/db.server");
+    const { withRawPrisma } = await import("~/lib/db.server");
 
     const url = new URL(request.url);
     const query = url.searchParams.get("q") || "";
@@ -44,7 +44,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
     }
 
     // Fetch all artworks with related data
-    const allArtworks = await withPrisma(async (prisma) => {
+    const allArtworks = await withRawPrisma(async (prisma) => {
       return await prisma.artwork.findMany({
         select: {
           id: true,

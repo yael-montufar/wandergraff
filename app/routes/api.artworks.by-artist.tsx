@@ -12,9 +12,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const { withPrisma } = await import("~/lib/db.server");
+    const { withRawPrisma } = await import("~/lib/db.server");
 
-    const artworks = await withPrisma(async (db) => {
+    const artworks = await withRawPrisma(async (db) => {
       // First, check if this is an Artist table record (browse artist)
       const artist = await db.artist.findUnique({
         where: { id: artistId },

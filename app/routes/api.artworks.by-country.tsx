@@ -12,11 +12,11 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const { withPrisma } = await import("~/lib/db.server");
+    const { withRawPrisma } = await import("~/lib/db.server");
 
     const { extractCountryFromCoordinates } = await import("~/lib/geocoding.server");
     
-    const { country, artworks } = await withPrisma(async (db) => {
+    const { country, artworks } = await withRawPrisma(async (db) => {
       // Get the country name from Country table
       const country = await db.country.findUnique({
         where: { id: countryId },
