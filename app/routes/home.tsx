@@ -29,17 +29,18 @@ const colorSchemes = {
 export const loader: Route.LoaderFunction = async ({ request }) => {
   // Check if user is admin and redirect to dashboard
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
-  const { prismaClient } = await import("~/lib/db.server");
+  const { withPrisma } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
   const user = getUserFromToken(token);
 
   if (user) {
-    const prisma = await prismaClient();
-    const dbUser = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: { role: true },
+    const dbUser = await withPrisma(async (prisma) => {
+      return await prisma.user.findUnique({
+        where: { id: user.id },
+        select: { role: true },
+      });
     });
 
     if (dbUser?.role === "ADMIN") {

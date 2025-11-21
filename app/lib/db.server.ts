@@ -1,19 +1,36 @@
-// Prisma client initialization - deferred to avoid SSR issues
-// Import lazily when actually needed
-
-let prisma: any = null;
+// Prisma client initialization - serverless-friendly
+// Creates new instances to avoid prepared statement conflicts in Vercel
 
 export async function prismaClient() {
-  if (prisma) return prisma;
-
   try {
-    // Import from generated directory per prisma/schema.prisma config
-    // From app/lib/db.server.ts, go up 2 levels to project root, then into generated/prisma/client
     const { PrismaClient } = await import("@prisma/client");
-    prisma = new PrismaClient();
+    
+    // Create a new instance each time for serverless compatibility
+    // This prevents prepared statement conflicts in concurrent executions
+    const prisma = new PrismaClient({
+      datasources: {
+        db: {
+          url: process.env.DATABASE_URL,
+        },
+      },
+    });
+    
     return prisma;
   } catch (error) {
     console.error("Failed to initialize Prisma client:", error);
     throw error;
+  }
+}
+
+// Helper function to execute database operations with proper cleanup
+export async function withPrisma<T>(
+  operation: (prisma: any) => Promise<T>
+): Promise<T> {
+  const prisma = await prismaClient();
+  try {
+    return await operation(prisma);
+  } finally {
+    // Properly disconnect the client to prevent connection leaks
+    await prisma.$disconnect();
   }
 }

@@ -14,8 +14,7 @@ interface MapPin {
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    const { prismaClient } = await import("~/lib/db.server");
-    const prisma = await prismaClient();
+    const { withPrisma } = await import("~/lib/db.server");
     const url = new URL(request.url);
 
     // Parse viewport bounds from query parameters
@@ -58,46 +57,48 @@ export const loader: LoaderFunction = async ({ request }) => {
       console.log("[API PINS] hasMinLat:", !!minLat, "hasMaxLat:", !!maxLat, "hasMinLng:", !!minLng, "hasMaxLng:", !!maxLng, "hasZoom:", !!zoom);
     }
 
-    const artworks = await prisma.artwork.findMany({
-      where,
-      select: {
-        id: true,
-        latitude: true,
-        longitude: true,
-        title: true,
-        address: true,
-        claimStatus: true,
-        artist: {
-          select: {
-            artistName: true,
+    const pins = await withPrisma(async (prisma) => {
+      const artworks = await prisma.artwork.findMany({
+        where,
+        select: {
+          id: true,
+          latitude: true,
+          longitude: true,
+          title: true,
+          address: true,
+          claimStatus: true,
+          artist: {
+            select: {
+              artistName: true,
+            },
+          },
+          photos: {
+            select: {
+              photoUrl: true,
+            },
+            take: 1,
+            orderBy: {
+              uploadedAt: "desc",
+            },
           },
         },
-        photos: {
-          select: {
-            photoUrl: true,
-          },
-          take: 1,
-          orderBy: {
-            uploadedAt: "desc",
-          },
-        },
-      },
+      });
+
+      console.log("[API PINS] Query executed, results:", artworks.length, "artworks");
+      console.log("[API PINS] Filter was applied?", filterApplied);
+
+      return artworks.map((artwork): MapPin => ({
+        id: artwork.id,
+        latitude: artwork.latitude,
+        longitude: artwork.longitude,
+        title: artwork.title,
+        address: artwork.address || undefined,
+        claimStatus: artwork.claimStatus,
+        photoUrl: artwork.photos[0]?.photoUrl,
+        artistName: artwork.artist?.artistName,
+        photos: artwork.photos.map((p) => ({ photoUrl: p.photoUrl })),
+      }));
     });
-
-    console.log("[API PINS] Query executed, results:", artworks.length, "artworks");
-    console.log("[API PINS] Filter was applied?", filterApplied);
-
-    const pins: MapPin[] = artworks.map((artwork) => ({
-      id: artwork.id,
-      latitude: artwork.latitude,
-      longitude: artwork.longitude,
-      title: artwork.title,
-      address: artwork.address || undefined,
-      claimStatus: artwork.claimStatus,
-      photoUrl: artwork.photos[0]?.photoUrl,
-      artistName: artwork.artist?.artistName,
-      photos: artwork.photos.map((p) => ({ photoUrl: p.photoUrl })),
-    }));
 
     return new Response(JSON.stringify(pins), {
       status: 200,

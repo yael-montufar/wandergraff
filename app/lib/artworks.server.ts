@@ -1,5 +1,5 @@
 import { calculateDistance, isValidCoordinates } from "./geo";
-import { prismaClient } from "./db.server";
+import { prismaClient, withPrisma } from "./db.server";
 import { reverseGeocode, extractCountryFromCoordinates } from "./geocoding.server";
 import {
   ensureCountryExists,
@@ -420,34 +420,34 @@ export async function findDuplicateArtworkNearby(
   longitude: number,
   radiusMeters = PROXIMITY_RADIUS_METERS
 ) {
-  const prisma = await prismaClient();
-
-  const nearbyArtworks = await prisma.artwork.findMany({
-    where: {
-      // Find artworks within the proximity radius
-    },
-    include: {
-      createdBy: true,
-      artist: true,
-      photos: {
-        take: 1,
-        orderBy: {
-          uploadedAt: "desc",
+  return withPrisma(async (prisma) => {
+    const nearbyArtworks = await prisma.artwork.findMany({
+      where: {
+        // Find artworks within the proximity radius
+      },
+      include: {
+        createdBy: true,
+        artist: true,
+        photos: {
+          take: 1,
+          orderBy: {
+            uploadedAt: "desc",
+          },
         },
       },
-    },
-    orderBy: {
-      createdAt: "desc",
-    },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    // Filter by distance and return the closest one
+    const nearby = nearbyArtworks.filter((artwork) =>
+      calculateDistance(latitude, longitude, artwork.latitude, artwork.longitude) <=
+      radiusMeters
+    );
+
+    return nearby.length > 0 ? nearby[0] : null;
   });
-
-  // Filter by distance and return the closest one
-  const nearby = nearbyArtworks.filter((artwork) =>
-    calculateDistance(latitude, longitude, artwork.latitude, artwork.longitude) <=
-    radiusMeters
-  );
-
-  return nearby.length > 0 ? nearby[0] : null;
 }
 
 export async function getArtworksInBounds(
@@ -574,23 +574,23 @@ export async function listArtists(limit = 100) {
 }
 
 export async function getRecentArtworks(limit = 20) {
-  const prisma = await prismaClient();
-
-  return prisma.artwork.findMany({
-    orderBy: {
-      createdAt: "desc",
-    },
-    take: limit,
-    include: {
-      createdBy: true,
-      artist: true,
-      photos: {
-        take: 1,
-        orderBy: {
-          takenAt: "desc",
+  return withPrisma(async (prisma) => {
+    return prisma.artwork.findMany({
+      orderBy: {
+        createdAt: "desc",
+      },
+      take: limit,
+      include: {
+        createdBy: true,
+        artist: true,
+        photos: {
+          take: 1,
+          orderBy: {
+            takenAt: "desc",
+          },
         },
       },
-    },
+    });
   });
 }
 
