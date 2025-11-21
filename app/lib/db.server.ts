@@ -1,4 +1,5 @@
 import { PrismaClient } from "@prisma/client";
+import { Pool } from "pg";
 
 // Raw query helper to bypass prepared statements for critical operations
 export async function withRawQuery<T>(callback: (prisma: PrismaClient) => Promise<T>): Promise<T> {
@@ -100,11 +101,10 @@ export async function prismaClient() {
   });
 }
 
-// Helper for user profile queries using raw SQL to avoid prepared statement conflicts
+// Helper for user profile queries using direct PostgreSQL
 export async function getUserProfileData(userId: string) {
-  return await withRawQuery(async (prisma) => {
-    // Use raw SQL to completely bypass prepared statements
-    const userDetails = await prisma.$queryRaw`
+  return await withDirectPG(async (client) => {
+    const query = `
       SELECT 
         "avatarUrl", 
         "bio", 
@@ -116,17 +116,18 @@ export async function getUserProfileData(userId: string) {
         "artistTwitter", 
         "artistBio"
       FROM "User" 
-      WHERE "id" = ${userId}
+      WHERE "id" = $1
     `;
     
-    return Array.isArray(userDetails) ? userDetails[0] : null;
+    const result = await client.query(query, [userId]);
+    return result.rows[0] || null;
   });
 }
 
-// Helper for user settings queries using raw SQL
+// Helper for user settings queries using direct PostgreSQL
 export async function getUserSettingsData(userId: string) {
-  return await withRawQuery(async (prisma) => {
-    const userDetails = await prisma.$queryRaw`
+  return await withDirectPG(async (client) => {
+    const query = `
       SELECT 
         "id", 
         "name", 
@@ -134,33 +135,66 @@ export async function getUserSettingsData(userId: string) {
         "bio", 
         "avatarUrl"
       FROM "User" 
-      WHERE "id" = ${userId}
+      WHERE "id" = $1
     `;
     
-    return Array.isArray(userDetails) ? userDetails[0] : null;
+    const result = await client.query(query, [userId]);
+    return result.rows[0] || null;
   });
 }
 
-// Helper for root loader user profile using raw SQL
+// Helper for root loader user profile using direct PostgreSQL
 export async function getRootUserProfile(userId: string) {
-  return await withRawQuery(async (prisma) => {
-    const userProfile = await prisma.$queryRaw`
+  return await withDirectPG(async (client) => {
+    const query = `
       SELECT 
         "avatarUrl", 
         "role"
       FROM "User" 
-      WHERE "id" = ${userId}
+      WHERE "id" = $1
     `;
     
-    return Array.isArray(userProfile) ? userProfile[0] : null;
+    const result = await client.query(query, [userId]);
+    return result.rows[0] || null;
   });
 }
 
-// Helper for recent artworks using raw SQL with photos
+// Direct PostgreSQL connection helper - completely bypasses Prisma
+export async function withDirectPG<T>(callback: (client: any) => Promise<T>): Promise<T> {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) {
+    throw new Error("DATABASE_URL environment variable is not set");
+  }
+
+  // Create a completely isolated PostgreSQL connection
+  const pool = new Pool({
+    connectionString,
+    max: 1, // Single connection
+    idleTimeoutMillis: 1000,
+    connectionTimeoutMillis: 5000,
+  });
+
+  const client = await pool.connect();
+  
+  try {
+    return await callback(client);
+  } catch (error) {
+    console.error("Direct PostgreSQL operation failed:", error);
+    throw error;
+  } finally {
+    try {
+      client.release();
+      await pool.end();
+    } catch (cleanupError) {
+      console.error("Failed to cleanup PostgreSQL connection:", cleanupError);
+    }
+  }
+}
+
+// Helper for recent artworks using direct PostgreSQL
 export async function getRecentArtworksRaw(limit: number = 20) {
-  return await withRawQuery(async (prisma) => {
-    // Get artworks with their first photo
-    const artworks = await prisma.$queryRaw`
+  return await withDirectPG(async (client) => {
+    const query = `
       SELECT 
         a."id",
         a."title",
@@ -188,17 +222,19 @@ export async function getRecentArtworksRaw(limit: number = 20) {
         LIMIT 1
       ) p ON true
       ORDER BY a."createdAt" DESC
-      LIMIT ${limit}
+      LIMIT $1
     `;
     
+    const result = await client.query(query, [limit]);
+    
     // Transform the results to match the expected structure
-    const transformedArtworks = Array.isArray(artworks) ? artworks.map((artwork: any) => ({
+    const transformedArtworks = result.rows.map((artwork: any) => ({
       ...artwork,
       artist: artwork.artistName ? { 
         name: artwork.artistDisplayName || artwork.artistName 
       } : null,
       photos: artwork.firstPhotoUrl ? [{ photoUrl: artwork.firstPhotoUrl }] : []
-    })) : [];
+    }));
     
     return transformedArtworks;
   });
