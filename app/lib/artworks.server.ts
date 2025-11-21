@@ -256,7 +256,7 @@ export async function claimArtwork(artworkId: string, artistId: string) {
 }
 
 export async function approveClaim(artworkId: string) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   // Get artwork details before updating
   const artwork = await prisma.artwork.findUnique({
@@ -288,10 +288,11 @@ export async function approveClaim(artworkId: string) {
   }
 
   return updated;
+  });
 }
 
 export async function rejectClaim(artworkId: string) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   // Get artwork details before updating
   const artwork = await prisma.artwork.findUnique({
@@ -336,10 +337,11 @@ export async function rejectClaim(artworkId: string) {
   }
 
   return updated;
+  });
 }
 
 export async function unclaimArtwork(artworkId: string, artistId: string) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   // Only allow unclaiming if the artist is the one who claimed it
   const artwork = await prisma.artwork.findUnique({
@@ -360,7 +362,7 @@ export async function unclaimArtwork(artworkId: string, artistId: string) {
 }
 
 export async function getPendingClaimsCount(artistId: string) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   return prisma.artwork.count({
     where: {
@@ -371,7 +373,7 @@ export async function getPendingClaimsCount(artistId: string) {
 }
 
 export async function isArtistInCooldown(artworkId: string, artistId: string) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
   const COOLDOWN_DAYS = 14;
 
   const artwork = await prisma.artwork.findUnique({
@@ -402,7 +404,7 @@ export async function findNearbyArtworks(
   longitude: number,
   radiusMeters = PROXIMITY_RADIUS_METERS
 ) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   const artworks = await prisma.artwork.findMany({
     include: {
@@ -499,7 +501,7 @@ export async function getArtworksByArtist(artistId: string) {
 }
 
 export async function getArtworksByYear(year: number) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   return prisma.artwork.findMany({
     where: {
@@ -517,7 +519,7 @@ export async function getArtworksByYear(year: number) {
 }
 
 export async function getYearsWithArtworks() {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   const artworks = await prisma.artwork.findMany({
     where: {
@@ -539,7 +541,7 @@ export async function getYearsWithArtworks() {
 }
 
 export async function getArtworkCountByYear(year: number) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   return prisma.artwork.count({
     where: {
@@ -550,7 +552,7 @@ export async function getArtworkCountByYear(year: number) {
 }
 
 export async function listArtists(limit = 100) {
-  const prisma = await prismaClient();
+  return await withRawPrisma(async (prisma) => {
 
   const artists = await prisma.user.findMany({
     where: {
