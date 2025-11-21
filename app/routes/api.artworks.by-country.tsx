@@ -12,12 +12,41 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const { prismaClient } = await import("~/lib/db.server");
-    const db = await prismaClient();
+    const { withPrisma } = await import("~/lib/db.server");
 
-    // Get the country name from Country table
-    const country = await db.country.findUnique({
-      where: { id: countryId },
+    const { country, artworks } = await withPrisma(async (db) => {
+      // Get the country name from Country table
+      const country = await db.country.findUnique({
+        where: { id: countryId },
+      });
+
+      if (!country) {
+        return { country: null, artworks: [] };
+      }
+
+      // Find all artworks (any status) with this country in their address
+      const artworks = await db.artwork.findMany({
+        where: {
+          address: {
+            contains: country.name,
+            mode: "insensitive",
+          },
+        },
+        include: {
+          artist: true,
+          photos: {
+            take: 1,
+            orderBy: {
+              uploadedAt: "desc",
+            },
+          },
+        },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
+
+      return { country, artworks };
     });
 
     if (!country) {
@@ -26,28 +55,6 @@ export const loader: LoaderFunction = async ({ request }) => {
         headers: { "Content-Type": "application/json" },
       });
     }
-
-    // Find all artworks (any status) with this country in their address
-    const artworks = await db.artwork.findMany({
-      where: {
-        address: {
-          contains: country.name,
-          mode: "insensitive",
-        },
-      },
-      include: {
-        artist: true,
-        photos: {
-          take: 1,
-          orderBy: {
-            uploadedAt: "desc",
-          },
-        },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
-    });
 
     return new Response(JSON.stringify(artworks), {
       status: 200,

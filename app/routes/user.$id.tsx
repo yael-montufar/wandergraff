@@ -18,7 +18,7 @@ type LoaderData = {
 };
 
 export const loader: Route.LoaderFunction = async ({ params, request }) => {
-  const { prismaClient } = await import("~/lib/db.server");
+  const { withPrisma } = await import("~/lib/db.server");
   const { getUserCollections } = await import("~/lib/collections.server");
 
   const { id } = params;
@@ -28,62 +28,64 @@ export const loader: Route.LoaderFunction = async ({ params, request }) => {
   }
 
   try {
-    const prisma = await prismaClient();
+    const { user, collections, publicPhotos, claimedArtworks } = await withPrisma(async (prisma) => {
+      const user = await prisma.user.findUnique({
+        where: { id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          avatarUrl: true,
+          bio: true,
+          role: true,
+        },
+      });
 
-    const user = await prisma.user.findUnique({
-      where: { id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        bio: true,
-        role: true,
-      },
+      if (!user) {
+        throw new Response("User not found", { status: 404 });
+      }
+
+      // Get public collections
+      const [collections, publicPhotos, claimedArtworks] = await Promise.all([
+        prisma.collection.findMany({
+          where: {
+            userId: id,
+            isPublic: true,
+          },
+          include: {
+            items: {
+              take: 3,
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+        prisma.photo.findMany({
+          where: {
+            userId: id,
+            isPrivate: false,
+          },
+          include: {
+            artwork: true,
+          },
+          orderBy: { uploadedAt: "desc" },
+          take: 12,
+        }),
+        prisma.artwork.findMany({
+          where: {
+            artistId: id,
+            claimStatus: "CLAIMED",
+          },
+          include: {
+            photos: {
+              take: 1,
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        }),
+      ]);
+
+      return { user, collections, publicPhotos, claimedArtworks };
     });
-
-    if (!user) {
-      throw new Response("User not found", { status: 404 });
-    }
-
-    // Get public collections
-    const [collections, publicPhotos, claimedArtworks] = await Promise.all([
-      prisma.collection.findMany({
-        where: {
-          userId: id,
-          isPublic: true,
-        },
-        include: {
-          items: {
-            take: 3,
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-      prisma.photo.findMany({
-        where: {
-          userId: id,
-          isPrivate: false,
-        },
-        include: {
-          artwork: true,
-        },
-        orderBy: { uploadedAt: "desc" },
-        take: 12,
-      }),
-      prisma.artwork.findMany({
-        where: {
-          artistId: id,
-          claimStatus: "CLAIMED",
-        },
-        include: {
-          photos: {
-            take: 1,
-          },
-        },
-        orderBy: { createdAt: "desc" },
-      }),
-    ]);
 
     return {
       user,

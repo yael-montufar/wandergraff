@@ -10,13 +10,14 @@ interface ArtistsByLetter {
 
 export const loader: LoaderFunction = async () => {
   try {
-    const { prismaClient } = await import("~/lib/db.server");
-    const db = await prismaClient();
-    const artists = await db.artist.findMany({
-      orderBy: [
-        { artworkCount: "desc" },
-        { name: "asc" },
-      ],
+    const { withPrisma } = await import("~/lib/db.server");
+    const artists = await withPrisma(async (db) => {
+      return await db.artist.findMany({
+        orderBy: [
+          { artworkCount: "desc" },
+          { name: "asc" },
+        ],
+      });
     });
 
     // Group artists by first letter

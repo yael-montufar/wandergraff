@@ -55,6 +55,7 @@ export const action: Route.ActionFunction = async ({ request, params }) => {
     return { error: "Artwork ID is required" };
   }
 
+  const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
   const user = getUserFromToken(token);
@@ -68,13 +69,15 @@ export const action: Route.ActionFunction = async ({ request, params }) => {
 
   if (intent === "claim-artwork") {
     try {
-      const prisma = await prismaClient();
-      const { getPendingClaimsCount, isArtistInCooldown } = await import("~/lib/artworks.server");
+      const { withPrisma } = await import("~/lib/db.server");
+      const { getPendingClaimsCount, isArtistInCooldown, getArtwork } = await import("~/lib/artworks.server");
 
       // Verify user has ARTIST role
-      const userProfile = await prisma.user.findUnique({
-        where: { id: user.id },
-        select: { role: true },
+      const userProfile = await withPrisma(async (prisma) => {
+        return await prisma.user.findUnique({
+          where: { id: user.id },
+          select: { role: true },
+        });
       });
 
       if (!userProfile || userProfile.role !== "ARTIST") {

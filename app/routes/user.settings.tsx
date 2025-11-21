@@ -21,7 +21,7 @@ type ActionData = {
 
 export const loader: Route.LoaderFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
-  const { prismaClient } = await import("~/lib/db.server");
+  const { withPrisma } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
@@ -32,16 +32,17 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   }
 
   try {
-    const prisma = await prismaClient();
-    const userDetails = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        bio: true,
-        avatarUrl: true,
-      },
+    const userDetails = await withPrisma(async (prisma) => {
+      return await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          bio: true,
+          avatarUrl: true,
+        },
+      });
     });
 
     if (!userDetails) {
@@ -57,7 +58,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
 
 export const action: Route.ActionFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
-  const { prismaClient } = await import("~/lib/db.server");
+  const { withPrisma } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
@@ -77,13 +78,14 @@ export const action: Route.ActionFunction = async ({ request }) => {
     }
 
     try {
-      const prisma = await prismaClient();
-      await prisma.user.update({
-        where: { id: user.id },
-        data: {
-          name: name.trim(),
-          bio: bio ? bio.trim() : null,
-        },
+      await withPrisma(async (prisma) => {
+        return await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            name: name.trim(),
+            bio: bio ? bio.trim() : null,
+          },
+        });
       });
 
       return { success: true };

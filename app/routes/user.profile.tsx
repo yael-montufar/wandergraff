@@ -32,7 +32,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const { getPhotosByUser } = await import("~/lib/photos.server");
   const { getUserCollections } = await import("~/lib/collections.server");
-  const { prismaClient } = await import("~/lib/db.server");
+  const { withPrisma } = await import("~/lib/db.server");
 
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
@@ -43,20 +43,21 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   }
 
   try {
-    const prisma = await prismaClient();
-    const userDetails = await prisma.user.findUnique({
-      where: { id: user.id },
-      select: {
-        avatarUrl: true,
-        bio: true,
-        role: true,
-        artistName: true,
-        artistWebsite: true,
-        artistEmail: true,
-        artistInstagram: true,
-        artistTwitter: true,
-        artistBio: true,
-      },
+    const userDetails = await withPrisma(async (prisma) => {
+      return await prisma.user.findUnique({
+        where: { id: user.id },
+        select: {
+          avatarUrl: true,
+          bio: true,
+          role: true,
+          artistName: true,
+          artistWebsite: true,
+          artistEmail: true,
+          artistInstagram: true,
+          artistTwitter: true,
+          artistBio: true,
+        },
+      });
     });
 
     const [allPhotos, collections] = await Promise.all([
@@ -80,7 +81,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const { updatePhoto, deletePhoto } = await import("~/lib/photos.server");
   const { deleteCollection } = await import("~/lib/collections.server");
-  const { prismaClient } = await import("~/lib/db.server");
+  const { withPrisma } = await import("~/lib/db.server");
   const { ensureArtistExists } = await import("~/lib/curation.server");
 
   const cookieHeader = request.headers.get("cookie");
@@ -104,18 +105,19 @@ export const action: Route.ActionFunction = async ({ request }) => {
         const artistTwitter = formData.get("artistTwitter") as string;
         const artistBio = formData.get("artistBio") as string;
 
-        const prisma = await prismaClient();
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            role: "ARTIST",
-            artistName: artistName || null,
-            artistWebsite: artistWebsite || null,
-            artistEmail: artistEmail || null,
-            artistInstagram: artistInstagram || null,
-            artistTwitter: artistTwitter || null,
-            artistBio: artistBio || null,
-          },
+        await withPrisma(async (prisma) => {
+          return await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              role: "ARTIST",
+              artistName: artistName || null,
+              artistWebsite: artistWebsite || null,
+              artistEmail: artistEmail || null,
+              artistInstagram: artistInstagram || null,
+              artistTwitter: artistTwitter || null,
+              artistBio: artistBio || null,
+            },
+          });
         });
 
         // Register the artist in the browse system when they become an artist
@@ -140,24 +142,26 @@ export const action: Route.ActionFunction = async ({ request }) => {
         const artistTwitter = formData.get("artistTwitter") as string;
         const artistBio = formData.get("artistBio") as string;
 
-        const prisma = await prismaClient();
+        // Get current artist name to check if it changed and update user
+        const currentUser = await withPrisma(async (prisma) => {
+          const currentUserData = await prisma.user.findUnique({
+            where: { id: user.id },
+            select: { artistName: true },
+          });
 
-        // Get current artist name to check if it changed
-        const currentUser = await prisma.user.findUnique({
-          where: { id: user.id },
-          select: { artistName: true },
-        });
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              artistName: artistName || null,
+              artistWebsite: artistWebsite || null,
+              artistEmail: artistEmail || null,
+              artistInstagram: artistInstagram || null,
+              artistTwitter: artistTwitter || null,
+              artistBio: artistBio || null,
+            },
+          });
 
-        await prisma.user.update({
-          where: { id: user.id },
-          data: {
-            artistName: artistName || null,
-            artistWebsite: artistWebsite || null,
-            artistEmail: artistEmail || null,
-            artistInstagram: artistInstagram || null,
-            artistTwitter: artistTwitter || null,
-            artistBio: artistBio || null,
-          },
+          return currentUserData;
         });
 
         // Register the updated artist name in the browse system if changed

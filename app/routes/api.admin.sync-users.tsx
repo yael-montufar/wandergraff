@@ -44,8 +44,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       },
     });
 
-    const { prismaClient } = await import("~/lib/db.server");
-    const prisma = await prismaClient();
+    const { withPrisma } = await import("~/lib/db.server");
 
     // Get all users from Supabase Auth
     const { data: authData, error: authError } = await supabase.auth.admin.listUsers();
@@ -79,7 +78,9 @@ export const loader: LoaderFunction = async ({ request }) => {
       }
 
       // Delete from database
-      const deleteResult = await prisma.user.deleteMany({});
+      const deleteResult = await withPrisma(async (prisma) => {
+        return await prisma.user.deleteMany({});
+      });
       results.dbDeleted = deleteResult.count;
 
       return json({
@@ -89,8 +90,10 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     } else {
       // SYNC USERS
-      const dbUsers = await prisma.user.findMany({
-        select: { id: true, email: true },
+      const dbUsers = await withPrisma(async (prisma) => {
+        return await prisma.user.findMany({
+          select: { id: true, email: true },
+        });
       });
 
       const dbUserIds = new Set(dbUsers.map((u) => u.id));
@@ -116,13 +119,15 @@ export const loader: LoaderFunction = async ({ request }) => {
         const name = authUser.user_metadata?.name || authUser.email?.split("@")[0] || "User";
 
         try {
-          await prisma.user.create({
-            data: {
-              id: authUser.id,
-              email: authUser.email!,
-              name: name,
-              role: "REGULAR_USER",
-            },
+          await withPrisma(async (prisma) => {
+            return await prisma.user.create({
+              data: {
+                id: authUser.id,
+                email: authUser.email!,
+                name: name,
+                role: "REGULAR_USER",
+              },
+            });
           });
           created.push(authUser.email);
         } catch (error) {

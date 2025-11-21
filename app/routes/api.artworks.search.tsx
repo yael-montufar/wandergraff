@@ -31,7 +31,7 @@ function fuzzyMatch(query: string, text: string): number {
 
 export const loader: Route.LoaderFunction = async ({ request }) => {
   try {
-    const { prismaClient } = await import("~/lib/db.server");
+    const { withPrisma } = await import("~/lib/db.server");
 
     const url = new URL(request.url);
     const query = url.searchParams.get("q") || "";
@@ -43,36 +43,36 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
       });
     }
 
-    const prisma = await prismaClient();
-
     // Fetch all artworks with related data
-    const allArtworks = await prisma.artwork.findMany({
-      select: {
-        id: true,
-        title: true,
-        description: true,
-        address: true,
-        yearCreated: true,
-        claimStatus: true,
-        artist: {
-          select: {
-            artistName: true,
+    const allArtworks = await withPrisma(async (prisma) => {
+      return await prisma.artwork.findMany({
+        select: {
+          id: true,
+          title: true,
+          description: true,
+          address: true,
+          yearCreated: true,
+          claimStatus: true,
+          artist: {
+            select: {
+              artistName: true,
+            },
+          },
+          createdBy: {
+            select: {
+              name: true,
+            },
+          },
+          photos: {
+            where: { isPrivate: false },
+            take: 1,
+            select: {
+              photoUrl: true,
+            },
           },
         },
-        createdBy: {
-          select: {
-            name: true,
-          },
-        },
-        photos: {
-          where: { isPrivate: false },
-          take: 1,
-          select: {
-            photoUrl: true,
-          },
-        },
-      },
-      take: 100, // Reasonable limit to avoid fetching too much
+        take: 100, // Reasonable limit to avoid fetching too much
+      });
     });
 
     // Perform fuzzy matching and scoring

@@ -33,22 +33,23 @@ export const action: ActionFunction = async ({ request }) => {
     }
 
     try {
-      const { prismaClient } = await import("~/lib/db.server");
-      const prisma = await prismaClient();
+      const { withPrisma } = await import("~/lib/db.server");
 
       // Use Supabase user ID as the primary key
-      const dbUser = await prisma.user.upsert({
-        where: { id },
-        update: {
-          email,
-          name: name || email,
-        },
-        create: {
-          id,
-          email,
-          name: name || email,
-          role: "REGULAR_USER",
-        },
+      const dbUser = await withPrisma(async (prisma) => {
+        return await prisma.user.upsert({
+          where: { id },
+          update: {
+            email,
+            name: name || email,
+          },
+          create: {
+            id,
+            email,
+            name: name || email,
+            role: "REGULAR_USER",
+          },
+        });
       });
 
       console.log("[API] ✓ User created/updated:", { id: dbUser.id, email: dbUser.email });

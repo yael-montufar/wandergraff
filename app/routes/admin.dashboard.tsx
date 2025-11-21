@@ -42,6 +42,7 @@ type ActionData = {
 };
 
 export const loader: LoaderFunction = async ({ request }) => {
+  const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
   const user = getUserFromToken(token);
@@ -51,11 +52,12 @@ export const loader: LoaderFunction = async ({ request }) => {
   }
 
   // Fetch user from database to get current role
-  const { prismaClient } = await import("~/lib/db.server");
-  const prisma = await prismaClient();
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { role: true },
+  const { withPrisma } = await import("~/lib/db.server");
+  const dbUser = await withPrisma(async (prisma) => {
+    return await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    });
   });
 
   if (!dbUser || dbUser.role !== "ADMIN") {
@@ -79,20 +81,22 @@ export const loader: LoaderFunction = async ({ request }) => {
   });
 
   // Fetch all artists with their contact info
-  const artists = await prisma.user.findMany({
-    where: { role: "ARTIST" },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      artistName: true,
-      artistEmail: true,
-      artistInstagram: true,
-      artistTwitter: true,
-      artistWebsite: true,
-      artistBio: true,
-    },
-    orderBy: { createdAt: "desc" },
+  const artists = await withPrisma(async (prisma) => {
+    return await prisma.user.findMany({
+      where: { role: "ARTIST" },
+      select: {
+        id: true,
+        email: true,
+        name: true,
+        artistName: true,
+        artistEmail: true,
+        artistInstagram: true,
+        artistTwitter: true,
+        artistWebsite: true,
+        artistBio: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
   });
 
   return {
@@ -110,6 +114,7 @@ export const action: ActionFunction = async ({ request }) => {
     return { error: "Method not allowed" };
   }
 
+  const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
   const user = getUserFromToken(token);
@@ -119,11 +124,12 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   // Verify user is admin in database
-  const { prismaClient } = await import("~/lib/db.server");
-  const prisma = await prismaClient();
-  const dbUser = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { role: true },
+  const { withPrisma } = await import("~/lib/db.server");
+  const dbUser = await withPrisma(async (prisma) => {
+    return await prisma.user.findUnique({
+      where: { id: user.id },
+      select: { role: true },
+    });
   });
 
   if (!dbUser || dbUser.role !== "ADMIN") {
