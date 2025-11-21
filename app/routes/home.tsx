@@ -5,7 +5,6 @@ import { Header } from "../components/Header";
 import { Button } from "../components/ui/Button";
 import { EmptyState } from "../components/ui/EmptyState";
 import { ArtworkCardLandscape } from "../components/ArtworkCardLandscape";
-import { getRecentArtworks } from "../lib/artworks.server";
 
 // Color schemes - Urban palette
 const colorSchemes = {
@@ -49,6 +48,7 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
   }
 
   try {
+    const { getRecentArtworks } = await import("../lib/artworks.server");
     const artworks = await getRecentArtworks(20);
     return { artworks, currentUserId: user?.id };
   } catch (error) {

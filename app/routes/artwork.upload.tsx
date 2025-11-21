@@ -1,7 +1,6 @@
 import { redirect, useRouteLoaderData } from "react-router";
 import { type LoaderFunction } from "react-router";
 import { useRef, useState } from "react";
-import { getAuthTokenFromCookie } from "~/lib/auth.server";
 import { createPhotoPreview } from "~/lib/exif.client";
 import { convertMobileImage, formatFileSize } from "~/lib/image-conversion.client";
 import { useTheme } from "~/lib/useTheme";

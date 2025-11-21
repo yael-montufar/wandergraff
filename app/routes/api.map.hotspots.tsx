@@ -1,5 +1,4 @@
 import { type LoaderFunction } from "react-router";
-import { prismaClient } from "~/lib/db.server";
 
 interface Hotspot {
   lat: number;
@@ -38,6 +37,7 @@ function clusterArtworks(
 
 export const loader: LoaderFunction = async () => {
   try {
+    const { prismaClient } = await import("~/lib/db.server");
     const prisma = await prismaClient();
 
     // Fetch all artworks with just coordinates

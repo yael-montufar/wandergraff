@@ -3,7 +3,6 @@ import { createClient } from "@supabase/supabase-js";
 import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router";
 import { useTheme } from "~/lib/useTheme";
-import { prismaClient } from "~/lib/db.server";
 
 export const loader: LoaderFunction = async ({ request }) => {
   const url = new URL(request.url);
@@ -42,6 +41,7 @@ export const loader: LoaderFunction = async ({ request }) => {
 
       // Create/upsert user in database
       try {
+        const { prismaClient } = await import("~/lib/db.server");
         const supabaseUser = data.session.user;
         const prisma = await prismaClient();
 

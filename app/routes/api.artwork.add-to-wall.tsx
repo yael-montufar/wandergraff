@@ -1,6 +1,4 @@
 import type { Route } from "./+types/api.artwork.add-to-wall";
-import { getAuthTokenFromCookie, getUserFromToken } from "~/lib/auth.server";
-import { addArtworkToCollection } from "~/lib/collections.server";
 
 export const action: Route.ActionFunction = async ({ request }) => {
   if (request.method !== "POST") {
@@ -8,6 +6,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
   }
 
   try {
+    const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
     const cookieHeader = request.headers.get("cookie");
     const token = getAuthTokenFromCookie(cookieHeader);
     const user = getUserFromToken(token);
@@ -25,6 +24,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
     }
 
     // Add artwork to collection (wall)
+    const { addArtworkToCollection } = await import("~/lib/collections.server");
     await addArtworkToCollection(wallId, artworkId);
 
     return { success: true, message: "Added to wall successfully" };

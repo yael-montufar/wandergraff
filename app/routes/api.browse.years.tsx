@@ -1,8 +1,8 @@
 import { type LoaderFunction } from "react-router";
-import { prismaClient } from "~/lib/db.server";
 
 export const loader: LoaderFunction = async () => {
   try {
+    const { prismaClient } = await import("~/lib/db.server");
     const db = await prismaClient();
     const years = await db.artworkYear.findMany({
       orderBy: [

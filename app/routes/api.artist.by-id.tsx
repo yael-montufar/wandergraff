@@ -1,5 +1,4 @@
 import { type LoaderFunction } from "react-router";
-import { prismaClient } from "~/lib/db.server";
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
@@ -13,6 +12,7 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
+    const { prismaClient } = await import("~/lib/db.server");
     const db = await prismaClient();
     const artist = await db.artist.findUnique({
       where: { id: artistId },

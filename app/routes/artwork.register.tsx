@@ -1,7 +1,6 @@
 import { type ActionFunction, redirect, useActionData } from "react-router";
 import { type LoaderFunction } from "react-router";
 import { useRef, useState, useEffect } from "react";
-import { getAuthTokenFromCookie, getUserFromToken } from "~/lib/auth.server";
 import { useTheme } from "~/lib/useTheme";
 import "leaflet/dist/leaflet.css";
 

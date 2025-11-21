@@ -1,5 +1,4 @@
 import { type ActionFunction } from "react-router";
-import { prismaClient } from "~/lib/db.server";
 
 function json(data: unknown, init?: ResponseInit) {
   return new Response(JSON.stringify(data), {
@@ -33,6 +32,7 @@ export const action: ActionFunction = async ({ request }) => {
       );
     }
 
+    const { prismaClient } = await import("~/lib/db.server");
     const prisma = await prismaClient();
 
     // Use Supabase user ID as the primary key

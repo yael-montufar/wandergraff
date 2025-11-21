@@ -4,10 +4,6 @@ import type { Route } from "./+types/artwork.$id";
 import { Header } from "../components/Header";
 import { Button } from "../components/ui/Button";
 import { AddToWallButton } from "../components/AddToWallButton";
-import { getArtwork, claimArtwork } from "../lib/artworks.server";
-import { getPhotosByArtwork } from "../lib/photos.server";
-import { getAuthTokenFromCookie, getUserFromToken } from "../lib/auth.server";
-import { prismaClient } from "../lib/db.server";
 import { useTheme } from "../lib/useTheme";
 
 export const loader: Route.LoaderFunction = async ({ params, request }) => {
@@ -18,6 +14,9 @@ export const loader: Route.LoaderFunction = async ({ params, request }) => {
   }
 
   try {
+    const { getArtwork } = await import("../lib/artworks.server");
+    const { getPhotosByArtwork } = await import("../lib/photos.server");
+    
     const artwork = await getArtwork(id);
 
     if (!artwork) {

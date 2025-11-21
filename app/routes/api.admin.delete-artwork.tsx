@@ -1,11 +1,11 @@
 import { type ActionFunction } from "react-router";
-import { getAuthTokenFromCookie, getUserFromToken } from "~/lib/auth.server";
 
 export const action: ActionFunction = async ({ request }) => {
   if (request.method !== "POST") {
     return { error: "Method not allowed" };
   }
 
+  const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
   const user = getUserFromToken(token);

@@ -1,5 +1,4 @@
 import { type LoaderFunction } from "react-router";
-import { prismaClient } from "~/lib/db.server";
 
 interface MapPin {
   id: string;
@@ -15,6 +14,7 @@ interface MapPin {
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
+    const { prismaClient } = await import("~/lib/db.server");
     const prisma = await prismaClient();
     const url = new URL(request.url);
 

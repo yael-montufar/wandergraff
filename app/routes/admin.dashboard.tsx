@@ -1,6 +1,5 @@
 import { type LoaderFunction, type ActionFunction, redirect, useLoaderData, useActionData, useSearchParams, useRouteLoaderData } from "react-router";
 import { useState, useRef } from "react";
-import { getAuthTokenFromCookie, getUserFromToken } from "~/lib/auth.server";
 import { Header } from "~/components/Header";
 import { useTheme } from "~/lib/useTheme";
 

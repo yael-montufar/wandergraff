@@ -1,6 +1,4 @@
 import { type ActionFunction } from "react-router";
-import { getAuthTokenFromCookie, getUserFromToken } from "~/lib/auth.server";
-import { saveUploadedFile } from "~/lib/file-upload.server";
 
 export const action: ActionFunction = async ({ request }) => {
   if (request.method !== "POST") {
@@ -10,6 +8,7 @@ export const action: ActionFunction = async ({ request }) => {
     });
   }
 
+  const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const cookieHeader = request.headers.get("cookie");
   const token = getAuthTokenFromCookie(cookieHeader);
   const user = getUserFromToken(token);
@@ -39,6 +38,7 @@ export const action: ActionFunction = async ({ request }) => {
     const { createPhoto } = await import("~/lib/photos.server");
 
     // Save file to disk and get the public URL
+    const { saveUploadedFile } = await import("~/lib/file-upload.server");
     const photoUrl = await saveUploadedFile(photoFile);
     console.log("[API_UPLOAD] File saved to:", photoUrl);
 
