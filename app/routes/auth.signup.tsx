@@ -39,8 +39,9 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
 
     console.log("[SIGNUP] Form data:", { provider, hasEmail: !!email, hasPassword: !!password, hasName: !!name });
 
-    const supabaseUrl = process.env.SUPABASE_URL;
-    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    // Try multiple ways to get environment variables
+    const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_PUBLIC_SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_PUBLIC_SUPABASE_ANON_KEY;
 
     console.log("[SIGNUP] Environment check:", {
       hasUrl: !!supabaseUrl,
