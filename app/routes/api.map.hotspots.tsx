@@ -37,16 +37,13 @@ function clusterArtworks(
 
 export const loader: LoaderFunction = async () => {
   try {
-    const { withPrisma } = await import("~/lib/db.server");
+    const { withDirectPG } = await import("~/lib/db.server");
 
     // Fetch all artworks with just coordinates
-    const artworks = await withPrisma(async (prisma) => {
-      return await prisma.artwork.findMany({
-        select: {
-          latitude: true,
-          longitude: true,
-        },
-      });
+    const artworks = await withDirectPG(async (client) => {
+      const query = `SELECT "latitude", "longitude" FROM "Artwork"`;
+      const result = await client.query(query);
+      return result.rows;
     });
 
     if (artworks.length === 0) {

@@ -124,8 +124,8 @@ export const action: ActionFunction = async ({ request }) => {
   }
 
   // Verify user is admin in database
-  const { withPrisma } = await import("~/lib/db.server");
-  const dbUser = await withPrisma(async (prisma) => {
+  const { withRawPrisma } = await import("~/lib/db.server");
+  const dbUser = await withRawPrisma(async (prisma) => {
     return await prisma.user.findUnique({
       where: { id: user.id },
       select: { role: true },

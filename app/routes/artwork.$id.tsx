@@ -69,11 +69,11 @@ export const action: Route.ActionFunction = async ({ request, params }) => {
 
   if (intent === "claim-artwork") {
     try {
-      const { withPrisma } = await import("~/lib/db.server");
+      const { withRawPrisma } = await import("~/lib/db.server");
       const { getPendingClaimsCount, isArtistInCooldown, getArtwork } = await import("~/lib/artworks.server");
 
       // Verify user has ARTIST role
-      const userProfile = await withPrisma(async (prisma) => {
+      const userProfile = await withRawPrisma(async (prisma) => {
         return await prisma.user.findUnique({
         where: { id: user.id },
         select: { role: true },

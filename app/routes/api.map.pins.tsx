@@ -14,7 +14,7 @@ interface MapPin {
 
 export const loader: LoaderFunction = async ({ request }) => {
   try {
-    const { withPrisma } = await import("~/lib/db.server");
+    const { withDirectPG } = await import("~/lib/db.server");
     const url = new URL(request.url);
 
     // Parse viewport bounds from query parameters
@@ -57,32 +57,42 @@ export const loader: LoaderFunction = async ({ request }) => {
       console.log("[API PINS] hasMinLat:", !!minLat, "hasMaxLat:", !!maxLat, "hasMinLng:", !!minLng, "hasMaxLng:", !!maxLng, "hasZoom:", !!zoom);
     }
 
-    const pins = await withPrisma(async (prisma) => {
-      const artworks = await prisma.artwork.findMany({
-        where,
-        select: {
-          id: true,
-          latitude: true,
-          longitude: true,
-          title: true,
-          address: true,
-          claimStatus: true,
-          artist: {
-            select: {
-              artistName: true,
-            },
-          },
-          photos: {
-            select: {
-              photoUrl: true,
-            },
-            take: 1,
-            orderBy: {
-              uploadedAt: "desc",
-            },
-          },
-        },
-      });
+    const pins = await withDirectPG(async (client) => {
+      let query = `
+        SELECT 
+          a."id",
+          a."latitude",
+          a."longitude",
+          a."title",
+          a."address",
+          a."claimStatus",
+          artist."artistName",
+          p."photoUrl"
+        FROM "Artwork" a
+        LEFT JOIN "User" artist ON a."artistId" = artist."id"
+        LEFT JOIN LATERAL (
+          SELECT "photoUrl" 
+          FROM "Photo" 
+          WHERE "artworkId" = a."id" 
+          ORDER BY "uploadedAt" DESC 
+          LIMIT 1
+        ) p ON true
+      `;
+      
+      const params: any[] = [];
+      
+      if (filterApplied && where.AND) {
+        query += ` WHERE a."latitude" >= $1 AND a."latitude" <= $2 AND a."longitude" >= $3 AND a."longitude" <= $4`;
+        params.push(
+          parseFloat(minLat!),
+          parseFloat(maxLat!),
+          parseFloat(minLng!),
+          parseFloat(maxLng!)
+        );
+      }
+      
+      const result = await client.query(query, params);
+      const artworks = result.rows;
 
       console.log("[API PINS] Query executed, results:", artworks.length, "artworks");
       console.log("[API PINS] Filter was applied?", filterApplied);
@@ -94,9 +104,9 @@ export const loader: LoaderFunction = async ({ request }) => {
         title: artwork.title,
         address: artwork.address || undefined,
         claimStatus: artwork.claimStatus,
-        photoUrl: artwork.photos[0]?.photoUrl,
-        artistName: artwork.artist?.artistName,
-        photos: artwork.photos.map((p) => ({ photoUrl: p.photoUrl })),
+        photoUrl: artwork.photoUrl,
+        artistName: artwork.artistName,
+        photos: artwork.photoUrl ? [{ photoUrl: artwork.photoUrl }] : [],
       }));
     });
 

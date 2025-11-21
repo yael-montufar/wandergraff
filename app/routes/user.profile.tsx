@@ -65,7 +65,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
   const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
   const { updatePhoto, deletePhoto } = await import("~/lib/photos.server");
   const { deleteCollection } = await import("~/lib/collections.server");
-  const { withPrisma } = await import("~/lib/db.server");
+  const { withRawPrisma } = await import("~/lib/db.server");
   const { ensureArtistExists } = await import("~/lib/curation.server");
 
   const cookieHeader = request.headers.get("cookie");
@@ -89,7 +89,7 @@ export const action: Route.ActionFunction = async ({ request }) => {
         const artistTwitter = formData.get("artistTwitter") as string;
         const artistBio = formData.get("artistBio") as string;
 
-        await withPrisma(async (prisma) => {
+        await withRawPrisma(async (prisma) => {
           return await prisma.user.update({
             where: { id: user.id },
             data: {
