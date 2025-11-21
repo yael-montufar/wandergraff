@@ -89,7 +89,14 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
     }
   } catch (error) {
     console.error("[LOGIN] Error in OAuth flow:", error);
-    return { error: "Authentication service error" };
+    console.error("[LOGIN] Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined
+    });
+    return { 
+      error: `Authentication service error: ${error instanceof Error ? error.message : String(error)}` 
+    };
   }
 
   // Handle email/password
