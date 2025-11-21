@@ -22,46 +22,74 @@ export const loader: LoaderFunction = async ({ request }) => {
 };
 
 export const action: ActionFunction = async ({ request }): Promise<ActionData | Response> => {
-  if (request.method !== "POST") {
-    return { error: "Method not allowed" };
-  }
+  try {
+    console.log("[LOGIN] Action started");
+    
+    if (request.method !== "POST") {
+      console.log("[LOGIN] Method not POST:", request.method);
+      return { error: "Method not allowed" };
+    }
 
-  const formData = await request.formData();
-  const provider = formData.get("provider") as string | null;
-  const email = formData.get("email") as string;
-  const password = formData.get("password") as string;
+    const formData = await request.formData();
+    const provider = formData.get("provider") as string | null;
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
 
-  const supabaseUrl = process.env.SUPABASE_URL;
-  const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
+    console.log("[LOGIN] Form data:", { provider, hasEmail: !!email, hasPassword: !!password });
 
-  if (!supabaseUrl || !supabaseAnonKey) {
-    console.error("[LOGIN] Missing Supabase environment variables");
-    return { error: "Server configuration error" };
-  }
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
-  const supabase = createClient(supabaseUrl, supabaseAnonKey);
-
-  // Handle OAuth
-  if (provider === "google") {
-    const origin = new URL(request.url).origin;
-    const redirectUrl = new URL("/auth/callback", origin);
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: "google",
-      options: {
-        redirectTo: redirectUrl.toString(),
-      },
+    console.log("[LOGIN] Environment check:", {
+      hasUrl: !!supabaseUrl,
+      hasKey: !!supabaseAnonKey,
+      urlLength: supabaseUrl?.length || 0,
+      keyLength: supabaseAnonKey?.length || 0
     });
 
-    if (error) {
-      console.error("[LOGIN] Google OAuth error:", error);
-      return { error: error.message };
+    if (!supabaseUrl || !supabaseAnonKey) {
+      console.error("[LOGIN] Missing Supabase environment variables");
+      return { error: "Server configuration error" };
     }
+  } catch (error) {
+    console.error("[LOGIN] Unexpected error in action start:", error);
+    return { error: "Server error occurred" };
+  }
 
-    if (data.url) {
-      return redirect(data.url);
+  try {
+    console.log("[LOGIN] Creating Supabase client");
+    const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+    // Handle OAuth
+    if (provider === "google") {
+      console.log("[LOGIN] Handling Google OAuth");
+      const origin = new URL(request.url).origin;
+      const redirectUrl = new URL("/auth/callback", origin);
+      console.log("[LOGIN] Redirect URL:", redirectUrl.toString());
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: redirectUrl.toString(),
+        },
+      });
+
+      if (error) {
+        console.error("[LOGIN] Google OAuth error:", error);
+        return { error: error.message };
+      }
+
+      if (data.url) {
+        console.log("[LOGIN] Redirecting to OAuth URL");
+        return redirect(data.url);
+      }
+
+      console.error("[LOGIN] No OAuth URL returned");
+      return { error: "Failed to initiate Google sign in" };
     }
-
-    return { error: "Failed to initiate Google sign in" };
+  } catch (error) {
+    console.error("[LOGIN] Error in OAuth flow:", error);
+    return { error: "Authentication service error" };
   }
 
   // Handle email/password
