@@ -37,15 +37,16 @@ function clusterArtworks(
 
 export const loader: LoaderFunction = async () => {
   try {
-    const { prismaClient } = await import("~/lib/db.server");
-    const prisma = await prismaClient();
+    const { withPrisma } = await import("~/lib/db.server");
 
     // Fetch all artworks with just coordinates
-    const artworks = await prisma.artwork.findMany({
-      select: {
-        latitude: true,
-        longitude: true,
-      },
+    const artworks = await withPrisma(async (prisma) => {
+      return await prisma.artwork.findMany({
+        select: {
+          latitude: true,
+          longitude: true,
+        },
+      });
     });
 
     if (artworks.length === 0) {

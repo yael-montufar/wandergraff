@@ -12,10 +12,11 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const { prismaClient } = await import("~/lib/db.server");
-    const db = await prismaClient();
-    const artist = await db.artist.findUnique({
-      where: { id: artistId },
+    const { withPrisma } = await import("~/lib/db.server");
+    const artist = await withPrisma(async (db) => {
+      return await db.artist.findUnique({
+        where: { id: artistId },
+      });
     });
 
     if (!artist) {

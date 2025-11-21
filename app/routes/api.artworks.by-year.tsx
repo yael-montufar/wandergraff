@@ -12,25 +12,26 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const { prismaClient } = await import("~/lib/db.server");
-    const db = await prismaClient();
-    const artworks = await db.artwork.findMany({
-      where: {
-        yearCreated: Number(year),
-        claimStatus: "CLAIMED",
-      },
-      include: {
-        artist: true,
-        photos: {
-          take: 1,
-          orderBy: {
-            uploadedAt: "desc",
+    const { withPrisma } = await import("~/lib/db.server");
+    const artworks = await withPrisma(async (db) => {
+      return await db.artwork.findMany({
+        where: {
+          yearCreated: Number(year),
+          claimStatus: "CLAIMED",
+        },
+        include: {
+          artist: true,
+          photos: {
+            take: 1,
+            orderBy: {
+              uploadedAt: "desc",
+            },
           },
         },
-      },
-      orderBy: {
-        createdAt: "desc",
-      },
+        orderBy: {
+          createdAt: "desc",
+        },
+      });
     });
 
     return new Response(JSON.stringify(artworks), {
