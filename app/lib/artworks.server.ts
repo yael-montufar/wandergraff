@@ -1,5 +1,5 @@
 import { calculateDistance, isValidCoordinates } from "./geo";
-import { prismaClient, withPrisma } from "./db.server";
+import { withRawPrisma } from "./db.server";
 import { reverseGeocode, extractCountryFromCoordinates } from "./geocoding.server";
 import {
   ensureCountryExists,
@@ -28,7 +28,7 @@ export async function createArtwork(
     throw new Error("Invalid coordinates");
   }
 
-  return await withPrisma(async (prisma) => {
+  return await withRawPrisma(async (prisma) => {
 
   // Ensure user exists in database (in case of race condition after auth)
   console.log("[ARTWORK] Ensuring user exists in DB:", createdById);
@@ -84,7 +84,7 @@ export async function createArtwork(
 }
 
 export async function getArtwork(id: string) {
-  return await withPrisma(async (prisma) => {
+  return await withRawPrisma(async (prisma) => {
     return await prisma.artwork.findUnique({
       where: { id },
       include: {
@@ -108,16 +108,16 @@ export async function updateArtwork(
     address?: string;
   }
 ) {
-  const prisma = await prismaClient();
-
-  return prisma.artwork.update({
-    where: { id },
-    data,
+  return await withRawPrisma(async (prisma) => {
+    return prisma.artwork.update({
+      where: { id },
+      data,
+    });
   });
 }
 
 export async function deleteArtwork(id: string) {
-  return await withPrisma(async (prisma) => {
+  return await withRawPrisma(async (prisma) => {
 
   // Get artwork details before deleting
   const artwork = await prisma.artwork.findUnique({
@@ -244,14 +244,14 @@ async function deleteFile(photoUrl: string) {
 }
 
 export async function claimArtwork(artworkId: string, artistId: string) {
-  const prisma = await prismaClient();
-
-  return prisma.artwork.update({
-    where: { id: artworkId },
-    data: {
-      artistId,
-      claimStatus: "PENDING_APPROVAL",
-    },
+  return await withRawPrisma(async (prisma) => {
+    return prisma.artwork.update({
+      where: { id: artworkId },
+      data: {
+        artistId,
+        claimStatus: "PENDING_APPROVAL",
+      },
+    });
   });
 }
 
@@ -422,7 +422,7 @@ export async function findDuplicateArtworkNearby(
   longitude: number,
   radiusMeters = PROXIMITY_RADIUS_METERS
 ) {
-  return withPrisma(async (prisma) => {
+  return withRawPrisma(async (prisma) => {
     const nearbyArtworks = await prisma.artwork.findMany({
       where: {
         // Find artworks within the proximity radius
@@ -459,7 +459,7 @@ export async function getArtworksInBounds(
   maxLon: number,
   limit = 100
 ) {
-  return await withPrisma(async (prisma) => {
+  return await withRawPrisma(async (prisma) => {
     return await prisma.artwork.findMany({
       where: {
         latitude: {
@@ -481,7 +481,7 @@ export async function getArtworksInBounds(
 }
 
 export async function getArtworksByArtist(artistId: string) {
-  return await withPrisma(async (prisma) => {
+  return await withRawPrisma(async (prisma) => {
     return await prisma.artwork.findMany({
       where: {
         artistId,
@@ -576,7 +576,7 @@ export async function listArtists(limit = 100) {
 }
 
 export async function getRecentArtworks(limit = 20) {
-  return withPrisma(async (prisma) => {
+  return withRawPrisma(async (prisma) => {
     return prisma.artwork.findMany({
       orderBy: {
         createdAt: "desc",
@@ -602,7 +602,7 @@ export async function getAllArtworks(options?: {
   limit?: number;
   offset?: number;
 }) {
-  return await withPrisma(async (prisma) => {
+  return await withRawPrisma(async (prisma) => {
     const where: any = {};
 
     // Search by title or address
