@@ -40,7 +40,7 @@ export async function uploadToSupabaseStorage(
     }
 
     const filename = `${timestamp}-${randomId}${ext}`;
-    const bucketName = type === "avatar" ? "avatars" : "photos";
+    const bucketName = type === "avatar" ? "Avatars" : "Photos";
     const filePath = `${type}s/${filename}`;
 
     console.log(`[SUPABASE_STORAGE] Uploading ${type} to bucket "${bucketName}" at path "${filePath}"`);
@@ -91,7 +91,7 @@ export async function deleteFromSupabaseStorage(
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    const bucketName = type === "avatar" ? "avatars" : "photos";
+    const bucketName = type === "avatar" ? "Avatars" : "Photos";
 
     const { error } = await supabase.storage
       .from(bucketName)
