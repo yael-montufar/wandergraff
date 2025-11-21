@@ -1,5 +1,4 @@
 import { type ActionFunction, type LoaderFunction, redirect, useActionData, Form } from "react-router";
-import { createClient } from "@supabase/supabase-js";
 import { useTheme } from "~/lib/useTheme";
 
 type ActionData = {
@@ -58,6 +57,7 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
 
   try {
     console.log("[LOGIN] Creating Supabase client");
+    const { createClient } = await import("@supabase/supabase-js");
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
     // Handle OAuth
