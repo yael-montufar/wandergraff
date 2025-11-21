@@ -40,10 +40,24 @@ export const loader: Route.LoaderFunction = async ({ request }) => {
           avatarUrl: profile.avatarUrl,
           role: profile.role,
         };
+      } else {
+        // User exists in Supabase but not in our database yet
+        // This can happen during the signup flow
+        console.log("[ROOT] User not found in database, using basic profile");
+        userWithProfile = {
+          ...user,
+          avatarUrl: null,
+          role: "REGULAR_USER",
+        };
       }
     } catch (error) {
       console.error("[ROOT] Error fetching user profile:", error);
       // Continue with basic user info if profile fetch fails
+      userWithProfile = {
+        ...user,
+        avatarUrl: null,
+        role: "REGULAR_USER",
+      };
     }
   }
 

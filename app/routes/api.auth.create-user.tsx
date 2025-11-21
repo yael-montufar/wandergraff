@@ -32,27 +32,37 @@ export const action: ActionFunction = async ({ request }) => {
       );
     }
 
-    const { prismaClient } = await import("~/lib/db.server");
-    const prisma = await prismaClient();
+    try {
+      const { prismaClient } = await import("~/lib/db.server");
+      const prisma = await prismaClient();
 
-    // Use Supabase user ID as the primary key
-    const dbUser = await prisma.user.upsert({
-      where: { id },
-      update: {
-        email,
-        name: name || email,
-      },
-      create: {
-        id,
-        email,
-        name: name || email,
-        role: "REGULAR_USER",
-      },
-    });
+      // Use Supabase user ID as the primary key
+      const dbUser = await prisma.user.upsert({
+        where: { id },
+        update: {
+          email,
+          name: name || email,
+        },
+        create: {
+          id,
+          email,
+          name: name || email,
+          role: "REGULAR_USER",
+        },
+      });
 
-    console.log("[API] ✓ User created/updated:", { id: dbUser.id, email: dbUser.email });
-
-    return json({ success: true, user: { id: dbUser.id, email: dbUser.email } });
+      console.log("[API] ✓ User created/updated:", { id: dbUser.id, email: dbUser.email });
+      return json({ success: true, user: { id: dbUser.id, email: dbUser.email } });
+    } catch (dbError) {
+      console.error("[API] ✗ Database error:", dbError);
+      // Return success even if database creation fails
+      // The user is still authenticated in Supabase
+      return json({ 
+        success: true, 
+        user: { id, email },
+        warning: "User authenticated but profile creation failed"
+      });
+    }
   } catch (error) {
     console.error("[API] ✗ Error creating user:", error);
     if (error instanceof Error) {

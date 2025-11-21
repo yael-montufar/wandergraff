@@ -133,10 +133,15 @@ export default function CallbackPage() {
             });
 
             if (!response.ok) {
-              console.error("[CALLBACK] Failed to create user in API");
+              console.warn("[CALLBACK] Failed to create user in API, but continuing with auth");
+            } else {
+              const result = await response.json();
+              if (result.warning) {
+                console.warn("[CALLBACK]", result.warning);
+              }
             }
           } catch (apiError) {
-            console.error("[CALLBACK] Error calling create-user API:", apiError);
+            console.warn("[CALLBACK] Error calling create-user API, but continuing with auth:", apiError);
           }
 
           // Get redirect URL from URL params first, then sessionStorage, default to home
