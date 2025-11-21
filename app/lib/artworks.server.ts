@@ -28,7 +28,7 @@ export async function createArtwork(
     throw new Error("Invalid coordinates");
   }
 
-  const prisma = await prismaClient();
+  return await withPrisma(async (prisma) => {
 
   // Ensure user exists in database (in case of race condition after auth)
   console.log("[ARTWORK] Ensuring user exists in DB:", createdById);
@@ -75,24 +75,25 @@ export async function createArtwork(
     },
   });
 
-  // Auto-create country record when artwork is created (location-based)
-  console.log("[ARTWORK] Ensuring country exists for coordinates:", latitude, longitude);
-  await ensureCountryExists(latitude, longitude);
+    // Auto-create country record when artwork is created (location-based)
+    console.log("[ARTWORK] Ensuring country exists for coordinates:", latitude, longitude);
+    await ensureCountryExists(latitude, longitude);
 
-  return artwork;
+    return artwork;
+  });
 }
 
 export async function getArtwork(id: string) {
-  const prisma = await prismaClient();
-
-  return prisma.artwork.findUnique({
-    where: { id },
-    include: {
-      createdBy: true,
-      artist: true,
-      photos: true,
-      galleries: true,
-    },
+  return await withPrisma(async (prisma) => {
+    return await prisma.artwork.findUnique({
+      where: { id },
+      include: {
+        createdBy: true,
+        artist: true,
+        photos: true,
+        galleries: true,
+      },
+    });
   });
 }
 
