@@ -40,6 +40,11 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseAnonKey = process.env.SUPABASE_ANON_KEY;
 
+    console.log("[LOGIN] Raw environment values:", {
+      supabaseUrl: supabaseUrl,
+      supabaseAnonKey: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : null
+    });
+
     console.log("[LOGIN] Environment check:", {
       hasUrl: !!supabaseUrl,
       hasKey: !!supabaseAnonKey,
@@ -58,9 +63,22 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
 
   try {
     console.log("[LOGIN] Creating Supabase client");
-    console.log("[LOGIN] Using URL:", supabaseUrl);
-    console.log("[LOGIN] Key length:", supabaseAnonKey?.length);
+    console.log("[LOGIN] About to call createClient with:", {
+      url: supabaseUrl,
+      urlType: typeof supabaseUrl,
+      key: supabaseAnonKey ? `${supabaseAnonKey.substring(0, 20)}...` : null,
+      keyType: typeof supabaseAnonKey
+    });
+    
+    if (!supabaseUrl) {
+      throw new Error("supabaseUrl is not defined");
+    }
+    if (!supabaseAnonKey) {
+      throw new Error("supabaseAnonKey is not defined");
+    }
+    
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
+    console.log("[LOGIN] Supabase client created successfully");
 
     // Handle OAuth
     if (provider === "google") {
