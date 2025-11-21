@@ -71,19 +71,19 @@ export async function updateCollection(
     isPublic?: boolean;
   }
 ) {
-  const prisma = await prismaClient();
-
-  return prisma.collection.update({
-    where: { id },
-    data,
+  return await withPrisma(async (prisma) => {
+    return await prisma.collection.update({
+      where: { id },
+      data,
+    });
   });
 }
 
 export async function deleteCollection(id: string) {
-  const prisma = await prismaClient();
-
-  return prisma.collection.delete({
-    where: { id },
+  return await withPrisma(async (prisma) => {
+    return await prisma.collection.delete({
+      where: { id },
+    });
   });
 }
 
@@ -91,21 +91,21 @@ export async function addArtworkToCollection(
   collectionId: string,
   artworkId: string
 ) {
-  const prisma = await prismaClient();
-
-  // Use upsert to make it idempotent - if already exists, just return it
-  return prisma.collectionItem.upsert({
-    where: {
-      collectionId_artworkId: {
+  return await withPrisma(async (prisma) => {
+    // Use upsert to make it idempotent - if already exists, just return it
+    return await prisma.collectionItem.upsert({
+      where: {
+        collectionId_artworkId: {
+          collectionId,
+          artworkId,
+        },
+      },
+      update: {},
+      create: {
         collectionId,
         artworkId,
       },
-    },
-    update: {},
-    create: {
-      collectionId,
-      artworkId,
-    },
+    });
   });
 }
 
@@ -113,13 +113,13 @@ export async function removeArtworkFromCollection(
   collectionId: string,
   artworkId: string
 ) {
-  const prisma = await prismaClient();
-
-  return prisma.collectionItem.deleteMany({
-    where: {
-      collectionId,
-      artworkId,
-    },
+  return await withPrisma(async (prisma) => {
+    return await prisma.collectionItem.deleteMany({
+      where: {
+        collectionId,
+        artworkId,
+      },
+    });
   });
 }
 
@@ -127,102 +127,100 @@ export async function isArtworkInCollection(
   collectionId: string,
   artworkId: string
 ) {
-  const prisma = await prismaClient();
-
-  const item = await prisma.collectionItem.findUnique({
-    where: {
-      collectionId_artworkId: {
-        collectionId,
-        artworkId,
+  return await withPrisma(async (prisma) => {
+    const item = await prisma.collectionItem.findUnique({
+      where: {
+        collectionId_artworkId: {
+          collectionId,
+          artworkId,
+        },
       },
-    },
-  });
+    });
 
-  return !!item;
+    return !!item;
+  });
 }
 
 export async function getUserCollections(userId: string) {
-  const prisma = await prismaClient();
-
-  return prisma.collection.findMany({
-    where: { userId },
-    include: {
-      items: true,
-    },
-    orderBy: { createdAt: "desc" },
+  return await withPrisma(async (prisma) => {
+    return await prisma.collection.findMany({
+      where: { userId },
+      include: {
+        items: true,
+      },
+      orderBy: { createdAt: "desc" },
+    });
   });
 }
 
 export async function getPublicCollections(limit = 50) {
-  const prisma = await prismaClient();
-
-  return prisma.collection.findMany({
-    where: { isPublic: true },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
+  return await withPrisma(async (prisma) => {
+    return await prisma.collection.findMany({
+      where: { isPublic: true },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
+          },
+        },
+        items: {
+          take: 3,
         },
       },
-      items: {
-        take: 3,
-      },
-    },
-    orderBy: { createdAt: "desc" },
-    take: limit,
+      orderBy: { createdAt: "desc" },
+      take: limit,
+    });
   });
 }
 
 export async function searchCollections(query: string, limit = 20) {
-  const prisma = await prismaClient();
-
-  return prisma.collection.findMany({
-    where: {
-      isPublic: true,
-      OR: [
-        {
-          name: {
-            contains: query,
-            mode: "insensitive",
+  return await withPrisma(async (prisma) => {
+    return await prisma.collection.findMany({
+      where: {
+        isPublic: true,
+        OR: [
+          {
+            name: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+          {
+            description: {
+              contains: query,
+              mode: "insensitive",
+            },
+          },
+        ],
+      },
+      include: {
+        user: {
+          select: {
+            id: true,
+            name: true,
+            avatarUrl: true,
           },
         },
-        {
-          description: {
-            contains: query,
-            mode: "insensitive",
-          },
-        },
-      ],
-    },
-    include: {
-      user: {
-        select: {
-          id: true,
-          name: true,
-          avatarUrl: true,
+        items: {
+          take: 3,
         },
       },
-      items: {
-        take: 3,
-      },
-    },
-    take: limit,
+      take: limit,
+    });
   });
 }
 
 export async function getCollectionArtworkCount(collectionId: string) {
-  const prisma = await prismaClient();
-
-  return prisma.collectionItem.count({
-    where: { collectionId },
+  return await withPrisma(async (prisma) => {
+    return await prisma.collectionItem.count({
+      where: { collectionId },
+    });
   });
 }
 
 export async function getCollectionWithArtworkCount(collectionId: string) {
-  const prisma = await prismaClient();
-
   const [collection, count] = await Promise.all([
     getCollection(collectionId),
     getCollectionArtworkCount(collectionId),

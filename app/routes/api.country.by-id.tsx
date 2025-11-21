@@ -12,10 +12,11 @@ export const loader: LoaderFunction = async ({ request }) => {
       });
     }
 
-    const { prismaClient } = await import("~/lib/db.server");
-    const db = await prismaClient();
-    const country = await db.country.findUnique({
-      where: { id: countryId },
+    const { withPrisma } = await import("~/lib/db.server");
+    const country = await withPrisma(async (db) => {
+      return await db.country.findUnique({
+        where: { id: countryId },
+      });
     });
 
     if (!country) {
