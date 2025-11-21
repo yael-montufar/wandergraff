@@ -60,8 +60,8 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
     console.log("[SIGNUP] Key length:", supabaseAnonKey?.length);
     const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-  // Handle OAuth
-  if (provider === "google") {
+    // Handle OAuth
+    if (provider === "google") {
     console.log("[SIGNUP] Initiating Google OAuth");
     const redirectUrl = new URL("/auth/callback", new URL(request.url).origin);
     const { data, error } = await supabase.auth.signInWithOAuth({
@@ -144,6 +144,10 @@ export const action: ActionFunction = async ({ request }): Promise<ActionData | 
   } catch (error) {
     console.error("[SIGNUP] Unexpected error:", error);
     return { error: error instanceof Error ? error.message : "Signup failed" };
+  }
+  } catch (error) {
+    console.error("[SIGNUP] Outer error:", error);
+    return { error: error instanceof Error ? error.message : "Authentication error" };
   }
 };
 
