@@ -4,7 +4,8 @@
   "type": "module",
   "scripts": {
     "postinstall": "prisma generate",
-    "build": "prisma migrate deploy && react-router build",
+    "build": "react-router build",
+    "vercel-build": "prisma migrate deploy && npm run build",
     "dev": "react-router dev",
     "start": "npm run dev",
     "typecheck": "react-router typegen && tsc",
