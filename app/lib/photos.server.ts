@@ -1,4 +1,4 @@
-import { prismaClient } from "./db.server";
+import { withPrisma } from "./db.server";
 
 export async function createPhoto(
   userId: string,
@@ -14,33 +14,33 @@ export async function createPhoto(
     metadata?: Record<string, any>;
   }
 ) {
-  const prisma = await prismaClient();
-
-  return prisma.photo.create({
-    data: {
-      userId,
-      photoUrl,
-      takenAt,
-      thumbnailUrl: options?.thumbnailUrl,
-      isPrivate: options?.isPrivate ?? false,
-      artworkId: options?.artworkId,
-      exifLatitude: options?.exifLatitude,
-      exifLongitude: options?.exifLongitude,
-      exifAltitude: options?.exifAltitude,
-      metadata: options?.metadata,
-    },
+  return await withPrisma(async (prisma) => {
+    return await prisma.photo.create({
+      data: {
+        userId,
+        photoUrl,
+        takenAt,
+        thumbnailUrl: options?.thumbnailUrl,
+        isPrivate: options?.isPrivate ?? false,
+        artworkId: options?.artworkId,
+        exifLatitude: options?.exifLatitude,
+        exifLongitude: options?.exifLongitude,
+        exifAltitude: options?.exifAltitude,
+        metadata: options?.metadata,
+      },
+    });
   });
 }
 
 export async function getPhoto(id: string) {
-  const prisma = await prismaClient();
-
-  return prisma.photo.findUnique({
-    where: { id },
-    include: {
-      user: true,
-      artwork: true,
-    },
+  return await withPrisma(async (prisma) => {
+    return await prisma.photo.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        artwork: true,
+      },
+    });
   });
 }
 

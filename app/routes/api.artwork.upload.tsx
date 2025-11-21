@@ -37,9 +37,9 @@ export const action: ActionFunction = async ({ request }) => {
     
     const { createPhoto } = await import("~/lib/photos.server");
 
-    // Save file to disk and get the public URL
-    const { saveUploadedFile } = await import("~/lib/file-upload.server");
-    const photoUrl = await saveUploadedFile(photoFile);
+    // Upload file to Supabase Storage and get the public URL
+    const { uploadToSupabaseStorage } = await import("~/lib/supabase-storage.server");
+    const photoUrl = await uploadToSupabaseStorage(photoFile, "photo");
     console.log("[API_UPLOAD] File saved to:", photoUrl);
 
     const photo = await createPhoto(

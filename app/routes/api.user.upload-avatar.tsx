@@ -10,8 +10,8 @@ export const action: Route.ActionFunction = async ({ request }) => {
 
   try {
     const { getAuthTokenFromCookie, getUserFromToken } = await import("~/lib/auth.server");
-    const { saveUploadedFile } = await import("~/lib/file-upload.server");
-    const { prismaClient } = await import("~/lib/db.server");
+    const { uploadToSupabaseStorage } = await import("~/lib/supabase-storage.server");
+    const { withPrisma } = await import("~/lib/db.server");
 
     const cookieHeader = request.headers.get("cookie");
     const token = getAuthTokenFromCookie(cookieHeader);
@@ -54,14 +54,15 @@ export const action: Route.ActionFunction = async ({ request }) => {
     // Convert file to buffer
     const buffer = Buffer.from(await avatarFile.arrayBuffer());
 
-    // Save avatar file
-    const avatarUrl = await saveUploadedFile(buffer, "avatar", avatarFile.type);
+    // Upload avatar file to Supabase Storage
+    const avatarUrl = await uploadToSupabaseStorage(buffer, "avatar", avatarFile.type);
 
     // Update user avatar in database
-    const prisma = await prismaClient();
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { avatarUrl },
+    await withPrisma(async (prisma) => {
+      await prisma.user.update({
+        where: { id: user.id },
+        data: { avatarUrl },
+      });
     });
 
     console.log("[AVATAR UPLOAD] Success. User:", user.id, "Avatar URL:", avatarUrl);

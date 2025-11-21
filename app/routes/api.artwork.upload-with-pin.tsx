@@ -62,9 +62,9 @@ export const action: ActionFunction = async ({ request }) => {
 
     console.log("[API_UPLOAD_PIN] Artwork created:", artwork.id);
 
-    // Save file to disk and get the public URL
-    const { saveUploadedFile } = await import("~/lib/file-upload.server");
-    const photoUrl = await saveUploadedFile(photoFile);
+    // Upload file to Supabase Storage and get the public URL
+    const { uploadToSupabaseStorage } = await import("~/lib/supabase-storage.server");
+    const photoUrl = await uploadToSupabaseStorage(photoFile, "photo");
     console.log("[API_UPLOAD_PIN] File saved to:", photoUrl);
 
     // Create the photo for the artwork
