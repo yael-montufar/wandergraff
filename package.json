@@ -4,14 +4,15 @@
   "type": "module",
   "scripts": {
     "postinstall": "prisma generate",
-    "build": "react-router build",
+    "build": "prisma migrate deploy && react-router build",
     "dev": "react-router dev",
     "start": "npm run dev",
     "typecheck": "react-router typegen && tsc",
     "fusion": "npx @builder.io/dev-tools@latest launch",
     "db:reset": "prisma migrate reset --force && npm run db:seed",
     "db:seed": "tsx prisma/seed.ts",
-    "db:wipe": "tsx prisma/wipe.ts"
+    "db:wipe": "tsx prisma/wipe.ts",
+    "db:migrate": "prisma migrate deploy"
   },
   "dependencies": {
     "@react-router/node": "^7.9.4",
